@@ -76,7 +76,6 @@ function isRouteActive(url: string, routePath?: string): boolean {
 const adminNavItems: NavItem[] = [
  { type: 'link', label: 'Dashboard', icon: LayoutDashboard, route: '/admin/dashboard' },
  { type: 'link', label: 'Verifikasi Data', icon: Ticket, route: '/admin/verifikasi-data' },
- { type: 'link', label: 'Monitoring Input', icon: Grid3X3, route: '/admin/monitor' },
 
  { type: 'header', label: 'MASTER DATA' },
  {
@@ -87,6 +86,7 @@ const adminNavItems: NavItem[] = [
  children: [
  { label: 'Kategori', icon: Database, route: '/admin/master/unit', permissionGroup: 'akses-layanan' },
  { label: 'Jenis Data', icon: Database, route: '/admin/master/sub-unit', permissionGroup: 'akses-layanan' },
+ { label: 'Campaign/Program', icon: Database, route: '/admin/master/campaigns', permissionGroup: 'akses-layanan' },
  ]
  },
  {
@@ -126,18 +126,18 @@ function NavLink({ item, active, isCollapsed }: { item: NavItem; active: boolean
  const Icon = item.icon;
 
  return (
- <Link
- href={item.route!}
- title={isCollapsed ? item.label : undefined}
- className={`group relative flex items-center transition-all duration-200 ${isCollapsed
- ? 'h-10 w-10 justify-center rounded-xl mx-auto'
- : 'gap-3 rounded-xl px-3.5 py-2.5 text-sm font-medium w-full'
- } ${active
- ? 'bg-primary/100/10 text-primary font-semibold shadow-sm border border-primary/20/50 '
- : 'text-muted-foreground hover:bg-muted/60 hover:text-foreground'
- }`}
- >
- <Icon className={`h-4 w-4 shrink-0 transition-transform duration-200 ${active ? 'scale-110 text-primary ' : 'group-hover:scale-110'}`} />
+  <Link
+  href={item.route!}
+  title={isCollapsed ? item.label : undefined}
+  className={`group relative flex items-center transition-all duration-200 ${isCollapsed
+  ? 'h-10 w-10 justify-center rounded-xl mx-auto'
+  : 'gap-3 rounded-xl px-3.5 py-2.5 text-sm font-medium w-full'
+  } ${active
+  ? 'bg-slate-100/80 text-slate-900 font-semibold shadow-sm'
+  : 'text-muted-foreground hover:bg-slate-50 hover:text-slate-900'
+  }`}
+  >
+  <Icon className={`h-4 w-4 shrink-0 transition-transform duration-200 ${active ? 'scale-110 text-slate-900' : 'group-hover:scale-110'}`} />
  {!isCollapsed && <span className="truncate">{item.label}</span>}
  </Link>
  );
@@ -179,14 +179,14 @@ function NavDropdown({ item, isCollapsed, url, permissions, auth }: { item: NavI
  return (
  <div className="relative flex justify-center w-full">
  <DropdownMenu open={popoverOpen} onOpenChange={setPopoverOpen}>
- <DropdownMenuTrigger
- aria-label={item.label}
- className={`group relative flex h-10 w-10 items-center justify-center rounded-xl transition-all duration-200 cursor-pointer outline-none ${isChildActive || popoverOpen
- ? 'bg-primary/100/10 text-primary font-semibold border border-primary/20/50 shadow-sm'
- : 'text-muted-foreground hover:bg-muted/60 hover:text-foreground'
- }`}
- >
- <Icon className={`h-4 w-4 shrink-0 transition-transform duration-200 ${isChildActive || popoverOpen ? 'scale-110 text-primary ' : 'group-hover:scale-110'}`} />
+  <DropdownMenuTrigger
+  aria-label={item.label}
+  className={`group relative flex h-10 w-10 items-center justify-center rounded-xl transition-all duration-200 cursor-pointer outline-none ${isChildActive || popoverOpen
+  ? 'bg-slate-100/80 text-slate-900 font-semibold shadow-sm'
+  : 'text-muted-foreground hover:bg-slate-50 hover:text-slate-900'
+  }`}
+  >
+  <Icon className={`h-4 w-4 shrink-0 transition-transform duration-200 ${isChildActive || popoverOpen ? 'scale-110 text-slate-900' : 'group-hover:scale-110'}`} />
  </DropdownMenuTrigger>
 
  <DropdownMenuContent side="right" align="start" sideOffset={10} className="w-52 p-1.5 z-[100] shadow-xl border bg-popover">
@@ -199,16 +199,16 @@ function NavDropdown({ item, isCollapsed, url, permissions, auth }: { item: NavI
  const active = isRouteActive(url, child.route);
  const ChildIcon = child.icon || Icon;
  return (
- <Link
- key={idx}
- href={child.route}
- onClick={() => setPopoverOpen(false)}
- className={`flex items-center gap-2.5 px-2.5 py-2 text-xs font-medium rounded-lg cursor-pointer transition-colors w-full outline-none ${active
- ? 'bg-primary/100/15 text-primary font-semibold'
- : 'text-muted-foreground hover:bg-muted/70 hover:text-foreground hover:bg-muted/50'
- }`}
- >
- <ChildIcon className={`h-3.5 w-3.5 shrink-0 ${active ? 'text-primary' : ''}`} />
+  <Link
+  key={idx}
+  href={child.route}
+  onClick={() => setPopoverOpen(false)}
+  className={`flex items-center gap-2.5 px-2.5 py-2 text-xs font-medium rounded-lg cursor-pointer transition-colors w-full outline-none ${active
+  ? 'bg-slate-100/80 text-slate-900 font-semibold'
+  : 'text-muted-foreground hover:bg-slate-50 hover:text-slate-900'
+  }`}
+  >
+  <ChildIcon className={`h-3.5 w-3.5 shrink-0 ${active ? 'text-slate-900' : ''}`} />
  <span className="truncate">{child.label}</span>
  </Link>
  );
@@ -222,16 +222,16 @@ function NavDropdown({ item, isCollapsed, url, permissions, auth }: { item: NavI
 
  return (
  <div className="flex flex-col gap-0.5">
- <button
- type="button"
- onClick={() => setIsOpen(!isOpen)}
- className={`group relative flex items-center justify-between gap-3 rounded-xl px-3.5 py-2.5 text-sm font-medium w-full transition-all duration-200 ${isChildActive
- ? 'bg-primary/100/10 text-primary font-semibold'
- : 'text-muted-foreground hover:bg-muted/60 hover:text-foreground'
- }`}
- >
- <div className="flex items-center gap-3 min-w-0">
- <Icon className={`h-4 w-4 shrink-0 transition-transform duration-200 ${isChildActive ? 'scale-110 text-primary ' : 'group-hover:scale-110'}`} />
+  <button
+  type="button"
+  onClick={() => setIsOpen(!isOpen)}
+  className={`group relative flex items-center justify-between gap-3 rounded-xl px-3.5 py-2.5 text-sm font-medium w-full transition-all duration-200 ${isChildActive
+  ? 'bg-slate-100/80 text-slate-900 font-semibold'
+  : 'text-muted-foreground hover:bg-slate-50 hover:text-slate-900'
+  }`}
+  >
+  <div className="flex items-center gap-3 min-w-0">
+  <Icon className={`h-4 w-4 shrink-0 transition-transform duration-200 ${isChildActive ? 'scale-110 text-slate-900' : 'group-hover:scale-110'}`} />
  <span className="truncate">{item.label}</span>
  </div>
  <ChevronDown className={`h-4 w-4 shrink-0 transition-transform duration-200 ${isOpen ? 'rotate-180 text-foreground' : 'text-muted-foreground'}`} />
@@ -243,19 +243,19 @@ function NavDropdown({ item, isCollapsed, url, permissions, auth }: { item: NavI
  const active = isRouteActive(url, child.route);
  const ChildIcon = child.icon;
  return (
- <Link
- key={idx}
- href={child.route}
- className={`flex items-center gap-2.5 rounded-lg px-3 py-2 text-xs font-medium transition-all duration-150 ${active
- ? 'bg-primary/100/15 text-primary font-semibold shadow-xs'
- : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'
- }`}
- >
- {ChildIcon ? (
- <ChildIcon className={`h-3.5 w-3.5 shrink-0 ${active ? 'text-primary' : ''}`} />
- ) : (
- <span className={`h-1.5 w-1.5 rounded-full shrink-0 ${active ? 'bg-primary/100' : 'bg-muted-foreground/40'}`} />
- )}
+  <Link
+  key={idx}
+  href={child.route}
+  className={`flex items-center gap-2.5 rounded-lg px-3 py-2 text-xs font-medium transition-all duration-150 ${active
+  ? 'bg-slate-100/80 text-slate-900 font-semibold shadow-sm'
+  : 'text-muted-foreground hover:bg-slate-50 hover:text-slate-900'
+  }`}
+  >
+  {ChildIcon ? (
+  <ChildIcon className={`h-3.5 w-3.5 shrink-0 ${active ? 'text-slate-900' : ''}`} />
+  ) : (
+  <span className={`h-1.5 w-1.5 rounded-full shrink-0 ${active ? 'bg-slate-900' : 'bg-muted-foreground/40'}`} />
+  )}
  <span className="truncate">{child.label}</span>
  </Link>
  );
@@ -388,8 +388,8 @@ export default function AdminLayout({ children, title }: AdminLayoutProps) {
  <div className={`flex h-14 shrink-0 items-center border-b px-4 lg:h-[60px] transition-all duration-300 ${collapsed ? 'justify-center' : 'justify-between'
  }`}>
  <Link href="/admin/dashboard" className="flex items-center gap-2.5 min-w-0">
- {collapsed ? (
- <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/100/10 p-1.5 transition-all hover:scale-105 border border-primary/20/50 shadow-sm">
+  {collapsed ? (
+  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-100/80 p-1.5 transition-all hover:scale-105 shadow-sm">
  <img
  src={faviconUrl}
  alt="Favicon"
@@ -459,31 +459,31 @@ export default function AdminLayout({ children, title }: AdminLayoutProps) {
  {/* Footer User Info */}
  <div className="shrink-0 border-t p-2.5 bg-background">
  {collapsed ? (
- <Tooltip>
- <TooltipTrigger className="mx-auto">
- <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-muted/70 hover:bg-muted cursor-pointer border shadow-sm transition-all">
- {admin?.avatar_path ? (
- <img src={`/storage/${admin.avatar_path}`} alt="Avatar" className="h-full w-full rounded-xl object-cover" />
- ) : (
- <User className="h-4 w-4 text-primary " />
- )}
- </div>
- </TooltipTrigger>
+  <Tooltip>
+  <TooltipTrigger className="mx-auto">
+  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-50 hover:bg-slate-100 cursor-pointer border border-slate-200 shadow-sm transition-all">
+  {admin?.avatar_path ? (
+  <img src={`/storage/${admin.avatar_path}`} alt="Avatar" className="h-full w-full rounded-xl object-cover" />
+  ) : (
+  <User className="h-4 w-4 text-slate-600 " />
+  )}
+  </div>
+  </TooltipTrigger>
  <TooltipContent side="right" className="flex flex-col gap-0.5 text-xs bg-zinc-900 text-white ">
  <span className="font-semibold">{admin?.name || admin?.username || 'Admin'}</span>
  <span className="text-[10px] text-zinc-400 ">{admin?.email || ''}</span>
  </TooltipContent>
  </Tooltip>
- ) : (
- <div className="rounded-xl bg-muted/50 border border-border/50 p-2.5">
- <div className="flex items-center gap-2.5">
- <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/100/10 overflow-hidden">
- {admin?.avatar_path ? (
- <img src={`/storage/${admin.avatar_path}`} alt="Avatar" className="h-full w-full object-cover" />
- ) : (
- <User className="h-4 w-4 text-primary " />
- )}
- </div>
+  ) : (
+  <div className="rounded-xl bg-slate-50/50 hover:bg-slate-50 border border-slate-200/60 p-2.5 transition-colors cursor-pointer" onClick={() => setProfileOpen(true)}>
+  <div className="flex items-center gap-2.5">
+  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-100 overflow-hidden">
+  {admin?.avatar_path ? (
+  <img src={`/storage/${admin.avatar_path}`} alt="Avatar" className="h-full w-full object-cover" />
+  ) : (
+  <User className="h-4 w-4 text-slate-600 " />
+  )}
+  </div>
  <div className="min-w-0">
  <p className="text-xs font-semibold text-foreground truncate">{admin?.name || admin?.username || 'Admin'}</p>
  <p className="text-[10px] text-muted-foreground truncate">{admin?.email || ''}</p>
@@ -498,7 +498,6 @@ export default function AdminLayout({ children, title }: AdminLayoutProps) {
  const bottomNavItems: BottomNavItem[] = [
  { label: 'Dashboard', icon: LayoutDashboard, route: '/admin/dashboard' },
  { label: 'Verifikasi', icon: Ticket, route: '/admin/verifikasi-data' },
- { label: 'Monitor', icon: Grid3X3, route: '/admin/monitor' },
  { label: 'Semua Data', icon: Database, route: '/admin/laporan/data' },
  { label: 'Lainnya', icon: MoreHorizontal, onClick: () => setSidebarOpen(true) },
  ];
@@ -517,7 +516,7 @@ export default function AdminLayout({ children, title }: AdminLayoutProps) {
  </Sheet>
 
  {/* Desktop Sidebar (Collapsible) */}
- <div className="relative hidden border-r bg-white md:flex flex-col h-full max-h-screen overflow-visible transition-all duration-300 ease-in-out">
+ <div className="relative hidden border-r border-slate-200/60 bg-white md:flex flex-col h-full max-h-screen overflow-visible transition-all duration-300 ease-in-out">
  {renderSidebar(isCollapsed)}
 
  {/* Floating Collapse/Expand Toggle Button */}
@@ -537,8 +536,8 @@ export default function AdminLayout({ children, title }: AdminLayoutProps) {
  </div>
 
  {/* Main Content Area */}
- <div className="flex flex-col min-w-0 overflow-hidden bg-zinc-50/50 ">
- <header className="relative z-40 flex h-14 shrink-0 items-center gap-3 border-b bg-white/80 backdrop-blur-md supports-[backdrop-filter]:bg-white/60 px-4 lg:h-[60px] lg:px-6">
+ <div className="flex flex-col min-w-0 overflow-hidden bg-slate-50/40 ">
+ <header className="relative z-40 flex h-14 shrink-0 items-center gap-3 border-b border-slate-200/60 bg-white/80 backdrop-blur-md supports-[backdrop-filter]:bg-white/60 px-4 lg:h-[60px] lg:px-6 shadow-[0_1px_2px_0_rgba(0,0,0,0.02)]">
  <div className="flex-1" />
 
  <NotificationBell />

@@ -4,12 +4,9 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\UserLoginController;
 use App\Http\Controllers\Auth\AdminLoginController;
 use App\Http\Controllers\Auth\ForgotPasswordController;
-// use App\Http\Controllers\CsatController;
-// use App\Http\Controllers\Admin\CsatController as AdminCsatController;
 use App\Http\Controllers\Admin\SystemConfigController;
 use App\Http\Controllers\Admin\AdminManagementController;
 use App\Http\Controllers\Admin\UserManagementController;
-use App\Http\Controllers\MonitorController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\User\DashboardController;
@@ -71,13 +68,6 @@ Route::middleware('auth')->group(function () {
     // Profil User
     Route::put('/profil', [\App\Http\Controllers\User\ProfileController::class, 'update'])->name('profil.update');
     Route::post('/profil/avatar', [\App\Http\Controllers\User\ProfileController::class, 'uploadAvatar'])->name('profil.upload-avatar');
-
-    // CSAT - HIDDEN UNTUK FUNDATA
-    // Route::post('/csat/{ticket}', [CsatController::class, 'store'])->name('csat.store');
-    // Route::get('/csat/riwayat', [CsatController::class, 'riwayat'])->name('csat.riwayat');
-
-    // Monitor
-    Route::get('/monitor', [MonitorController::class, 'userIndex'])->name('monitor');
 });
 
 // API dropdown (dependent dropdown & dynamic form)
@@ -106,14 +96,10 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::put('/profil', [\App\Http\Controllers\Admin\ProfileController::class, 'update'])->name('profil.update');
         Route::post('/profil/avatar', [\App\Http\Controllers\Admin\ProfileController::class, 'uploadAvatar'])->name('profil.upload-avatar');
 
-        // CSAT Admin - HIDDEN UNTUK FUNDATA
         Route::middleware('permission:akses-laporan')->group(function () {
-            // Route::get('/csat', [AdminCsatController::class, 'index'])->name('csat.index');
             Route::get('/laporan/data', [\App\Http\Controllers\Admin\LaporanDataController::class, 'index'])->name('laporan.data');
+            Route::get('/laporan/data/export', [\App\Http\Controllers\Admin\LaporanDataController::class, 'export'])->name('laporan.data.export');
         });
-
-        // Monitor Admin
-        Route::get('/monitor', [MonitorController::class, 'adminIndex'])->name('monitor.index');
 
 
         // Konfigurasi Sistem
@@ -128,10 +114,8 @@ Route::prefix('admin')->name('admin.')->group(function () {
 
         // Manual Scheduler - Sebagian di-hide untuk Fundata
         Route::prefix('scheduler')->name('scheduler.')->group(function () {
-            // Route::post('/sla-check', [\App\Http\Controllers\Admin\SchedulerController::class, 'runSlaCheck'])->name('sla-check');
             // Route::post('/booking-reminder', [\App\Http\Controllers\Admin\SchedulerController::class, 'runBookingReminder'])->name('booking-reminder');
             Route::post('/pending-reminder', [\App\Http\Controllers\Admin\SchedulerController::class, 'runPendingReminder'])->name('pending-reminder');
-            // Route::post('/csat-reminder', [\App\Http\Controllers\Admin\SchedulerController::class, 'runCsatReminder'])->name('csat-reminder');
             Route::post('/run-all', [\App\Http\Controllers\Admin\SchedulerController::class, 'runAll'])->name('run-all');
         });
 
@@ -151,6 +135,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::middleware('permission:akses-layanan')->group(function () {
             Route::resource('master/unit', \App\Http\Controllers\Admin\UnitController::class)->except(['create', 'edit', 'show'])->names('master.unit');
             Route::resource('master/sub-unit', \App\Http\Controllers\Admin\SubUnitController::class)->except(['create', 'edit', 'show'])->names('master.sub-unit');
+            Route::resource('master/campaigns', \App\Http\Controllers\Admin\CampaignController::class)->except(['create', 'edit', 'show'])->names('master.campaigns');
         });
 
         // Master Data Struktur
@@ -171,9 +156,6 @@ Route::prefix('admin')->name('admin.')->group(function () {
                 Route::delete('/fields/{formField}', [\App\Http\Controllers\Admin\FormFieldController::class, 'destroy'])->name('peraturan-form.destroy');
                 Route::post('/{subUnit}/reorder', [\App\Http\Controllers\Admin\FormFieldController::class, 'reorder'])->name('peraturan-form.reorder');
             });
-
-            // SLA Config - HIDDEN
-            // Route::resource('sla-config', \App\Http\Controllers\Admin\SlaConfigController::class)->except(['create', 'edit', 'show']);
 
             // Reminder Config
             Route::get('reminder-config', [\App\Http\Controllers\Admin\ReminderConfigController::class, 'index'])->name('reminder-config.index');

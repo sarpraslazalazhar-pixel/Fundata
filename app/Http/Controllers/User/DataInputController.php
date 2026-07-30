@@ -10,9 +10,6 @@ use App\Models\RoomVehicleBooking;
 use App\Models\Record;
 use App\Models\RecordAttachment;
 use App\Models\RecordLog;
-// use App\Models\TicketSlaTracking;
-use App\Models\Unit;
-// use App\Services\SlaCalculator;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\DB;
@@ -20,6 +17,8 @@ use Illuminate\Support\Facades\Notification;
 use App\Notifications\TicketCreatedUserNotification;
 use App\Notifications\TicketCreatedAdminNotification;
 use Inertia\Inertia;
+use App\Models\Campaign;
+use App\Models\Unit;
 
 class DataInputController extends Controller
 {
@@ -27,6 +26,7 @@ class DataInputController extends Controller
     {
         return Inertia::render('User/Data/Wizard', [
             'unitList' => Unit::where('aktif', true)->orderBy('nama_unit')->get(),
+            'campaigns' => Campaign::where('is_active', true)->orderBy('nama_campaign')->get(),
         ]);
     }
 
@@ -43,6 +43,7 @@ class DataInputController extends Controller
         $request->validate([
             'unit_id' => 'required|exists:units,id',
             'sub_unit_id' => 'required|exists:sub_units,id',
+            'campaign_id' => 'nullable|exists:campaigns,id',
             'form_data' => 'required|array',
             'nama_donatur' => 'nullable|string|max:255',
             'jumlah_donasi' => 'nullable|numeric|min:0',
@@ -102,9 +103,10 @@ class DataInputController extends Controller
                 'jabatan_id' => $user->jabatan_id,
                 'unit_id' => $request->unit_id,
                 'sub_unit_id' => $request->sub_unit_id,
+                'campaign_id' => $request->campaign_id,
                 'form_data' => $request->form_data,
-                'nama_donatur' => $extractedNamaDonatur,
-                'jumlah_donasi' => $extractedJumlahDonasi,
+                'nama_donatur' => $extractedNamaDonatur ?? $request->nama_donatur,
+                'jumlah_donasi' => $extractedJumlahDonasi ?? $request->jumlah_donasi,
                 'status' => $initialStatus,
             ]);
 
@@ -169,14 +171,6 @@ class DataInputController extends Controller
                 }
             }
 
-            // 3. Buat SLA tracking - HIDDEN UNTUK FUNDATA
-            /*
-            if ($initialStatus === 'pending') {
-                TicketSlaTracking::create([
-                    ...
-                ]);
-            }
-            */
 
             // 4. Log awal
             RecordLog::create([
@@ -186,11 +180,6 @@ class DataInputController extends Controller
                 'catatan' => 'Data disimpan oleh ' . auth()->user()->username,
             ]);
 
-            // 5. Integrasi Live Monitor (Booking Aset Generik) - HIDDEN UNTUK FUNDATA
-            /*
-            $subUnit = \App\Models\SubUnit::find($request->sub_unit_id);
-            ...
-            */
 
             return $record;
         });

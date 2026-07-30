@@ -8,7 +8,7 @@ import { TicketTimeline } from '@/Components/TicketTimeline';
 import { TicketAttachmentList } from '@/Components/TicketAttachmentList';
 import { formatDateId, formatTicketId } from '@/lib/utils';
 import { AttachmentViewer } from '@/Components/AttachmentViewer';
-import { FileText, ArrowLeft, Timer, AlertTriangle, PauseCircle, CheckCircle2, XCircle, Shield, Download, Eye, Clock, Edit2 } from 'lucide-react';
+import { FileText, ArrowLeft, AlertTriangle, CheckCircle2, XCircle, Download, Eye, Edit2 } from 'lucide-react';
 import ImageEditorModal from '@/Components/FormBuilder/ImageEditorModal';
 
 const validTransitions: Record<string, string[]> = {
@@ -130,6 +130,9 @@ export default function TicketDetail({ ticket, formFields, operators }: any) {
  <div className="grid grid-cols-2 gap-3 pb-3 border-b">
  <div><span className="text-sm text-slate-500">Unit</span><p className="font-medium">{ticket.unit?.nama_unit || '-'}</p></div>
  <div><span className="text-sm text-slate-500">Sub Unit</span><p className="font-medium">{ticket.sub_unit?.nama_layanan || '-'}</p></div>
+ {ticket.campaign && (
+ <div className="col-span-2"><span className="text-sm text-slate-500">Campaign / Program</span><p className="font-medium text-blue-700">{ticket.campaign.nama_campaign}</p></div>
+ )}
  </div>
  {formFields?.map((field: any) => (
  <div key={field.id}>
@@ -273,120 +276,7 @@ export default function TicketDetail({ ticket, formFields, operators }: any) {
  </CardContent>
  </Card>
 
- {ticket.sla_tracking && (
- <Card>
- <CardHeader>
- <CardTitle className="flex items-center gap-2">
- <Shield className="w-5 h-5" /> Status SLA
- </CardTitle>
- </CardHeader>
- <CardContent className="space-y-4">
- {/* Respon */}
- <div className="space-y-1">
- <div className="flex items-center justify-between">
- <span className="text-sm text-slate-500">SLA Respon</span>
- {!ticket.sla_tracking.sla_response_deadline && !ticket.sla_tracking.responded_at ? (
- <span className="inline-flex items-center gap-1 text-xs text-slate-500 font-medium">
- <Clock className="w-3 h-3" /> Belum Dimulai
- </span>
- ) : ticket.sla_tracking.responded_at ? (
- new Date(ticket.sla_tracking.responded_at) > new Date(ticket.sla_tracking.sla_response_deadline) ? (
- <span className="inline-flex items-center gap-1 text-xs text-red-600 font-medium">
- <XCircle className="w-3 h-3" /> Terlanggar
- </span>
- ) : (
- <span className="inline-flex items-center gap-1 text-xs text-green-600 font-medium">
- <CheckCircle2 className="w-3 h-3" /> Tercapai
- </span>
- )
- ) : ticket.sla_tracking.is_response_breached || (ticket.sla_tracking.sla_response_deadline && new Date() > new Date(ticket.sla_tracking.sla_response_deadline)) ? (
- <span className="inline-flex items-center gap-1 text-xs text-red-600 font-medium">
- <XCircle className="w-3 h-3" /> Terlanggar
- </span>
- ) : (
- <span className="inline-flex items-center gap-1 text-xs text-blue-600 font-medium">
- <Timer className="w-3 h-3" /> Berjalan
- </span>
- )}
- </div>
- {ticket.sla_tracking.sla_response_deadline ? (
- <p className="text-xs text-slate-400">
- Deadline: {formatDateId(ticket.sla_tracking.sla_response_deadline)}
- </p>
- ) : (
- <p className="text-xs text-slate-400">
- SLA akan dimulai saat status diubah ke Proses
- </p>
- )}
- {ticket.sla_tracking.responded_at && (
- <div className="text-xs mt-1 text-slate-500">
- Direspon: {formatDateId(ticket.sla_tracking.responded_at)}
- </div>
- )}
- </div>
 
- {/* Penyelesaian */}
- <div className="space-y-1">
- <div className="flex items-center justify-between">
- <span className="text-sm text-slate-500">SLA Penyelesaian</span>
- {!ticket.sla_tracking.sla_resolution_deadline && !ticket.sla_tracking.resolved_at ? (
- <span className="inline-flex items-center gap-1 text-xs text-slate-500 font-medium">
- <Clock className="w-3 h-3" /> Belum Dimulai
- </span>
- ) : ticket.sla_tracking.resolved_at ? (
- new Date(ticket.sla_tracking.resolved_at) > new Date(ticket.sla_tracking.sla_resolution_deadline) ? (
- <span className="inline-flex items-center gap-1 text-xs text-red-600 font-medium">
- <XCircle className="w-3 h-3" /> Terlanggar
- </span>
- ) : (
- <span className="inline-flex items-center gap-1 text-xs text-green-600 font-medium">
- <CheckCircle2 className="w-3 h-3" /> Tercapai
- </span>
- )
- ) : ticket.sla_tracking.is_resolution_breached || (ticket.sla_tracking.sla_resolution_deadline && new Date() > new Date(ticket.sla_tracking.sla_resolution_deadline)) ? (
- <span className="inline-flex items-center gap-1 text-xs text-red-600 font-medium">
- <XCircle className="w-3 h-3" /> Terlanggar
- </span>
- ) : (
- <span className="inline-flex items-center gap-1 text-xs text-blue-600 font-medium">
- <Timer className="w-3 h-3" /> Berjalan
- </span>
- )}
- </div>
- {ticket.sla_tracking.sla_resolution_deadline ? (
- <p className="text-xs text-slate-400">
- Deadline: {formatDateId(ticket.sla_tracking.sla_resolution_deadline)}
- </p>
- ) : (
- <p className="text-xs text-slate-400">
- SLA akan dimulai saat status diubah ke Proses
- </p>
- )}
- {ticket.sla_tracking.resolved_at && (
- <div className="text-xs mt-1 text-slate-500">
- Diselesaikan: {formatDateId(ticket.sla_tracking.resolved_at)}
- </div>
- )}
- </div>
-
-
- {/* Pause Status */}
- {ticket.sla_tracking.paused_at && (
- <div className="flex items-center gap-2 p-2 bg-amber-50 rounded-md border border-amber-200">
- <PauseCircle className="w-4 h-4 text-amber-600" />
- <span className="text-xs text-amber-700 font-medium">SLA sedang di-pause</span>
- </div>
- )}
-
- {/* Total Paused */}
- {ticket.sla_tracking.total_paused_minutes > 0 && (
- <div className="text-xs text-slate-400">
- Total waktu di-pause: {ticket.sla_tracking.total_paused_minutes} menit
- </div>
- )}
- </CardContent>
- </Card>
- )}
  </div>
  </div>
  

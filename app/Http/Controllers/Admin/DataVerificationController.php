@@ -10,7 +10,7 @@ use App\Models\Record;
 use App\Models\RecordAttachment;
 use App\Models\RecordLog;
 use App\Models\Unit;
-use App\Services\SlaCalculator;
+
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use App\Notifications\TicketStatusUpdatedNotification;
@@ -20,7 +20,7 @@ class DataVerificationController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Record::with(['user.divisi', 'unit', 'subUnit', 'slaTracking', 'assignedAdmin']);
+        $query = Record::with(['user.divisi', 'unit', 'subUnit', 'campaign', 'assignedAdmin']);
 
         $admin = auth('admin')->user();
         if (!$admin->hasRole('Super Admin')) {
@@ -88,8 +88,8 @@ class DataVerificationController extends Controller
 
         $record->load([
             'user', 'user.divisi', 'user.orgUnit', 'user.jabatan',
-            'unit', 'subUnit', 'orgDivisi', 'orgUnit', 'jabatan',
-            'attachments.field', 'slaTracking',
+            'unit', 'subUnit', 'campaign', 'orgDivisi', 'orgUnit', 'jabatan',
+            'attachments.field',
             'logs' => fn($q) => $q->latest('timestamp'),
             'logs.admin',
             'logs.attachments',
@@ -110,7 +110,7 @@ class DataVerificationController extends Controller
         ]);
     }
 
-    public function updateStatus(Request $request, Record $record, SlaCalculator $slaCalculator)
+    public function updateStatus(Request $request, Record $record)
     {
         $admin = auth('admin')->user();
         if (!$admin->hasRole('Super Admin')) {
@@ -146,57 +146,7 @@ class DataVerificationController extends Controller
             return redirect()->back()->with('error', 'Transisi status tidak valid.');
         }
 
-
-
-        $sla = $record->slaTracking;
-
-        if ($oldStatus === 'open' && $newStatus === 'on_proses') {
-            if ($sla && !$sla->responded_at) {
-                $respondedAt = now();
-                $sla->update([
-                    'responded_at' => $respondedAt,
-                    'is_response_breached' => $sla->sla_response_deadline && $respondedAt->gt($sla->sla_response_deadline),
-                ]);
-            }
-        }
-
-        if ($newStatus === 'pending' && $oldStatus !== 'pending') {
-            if ($sla) {
-                $slaCalculator->pauseSla($sla);
-            }
-        }
-
-        if ($oldStatus === 'pending' && $newStatus === 'on_proses') {
-            if ($sla) {
-                $slaCalculator->resumeSla($sla);
-            }
-            if ($sla && !$sla->responded_at) {
-                $respondedAt = now();
-                $sla->update([
-                    'responded_at' => $respondedAt,
-                    'is_response_breached' => $sla->sla_response_deadline && $respondedAt->gt($sla->sla_response_deadline),
-                ]);
-            }
-        }
-
-        if ($newStatus === 'on_proses' && $record->booking) {
-            if ($sla && !$sla->resolved_at) {
-                $resolvedAt = now();
-                $sla->update([
-                    'resolved_at' => $resolvedAt,
-                    'is_resolution_breached' => $sla->sla_resolution_deadline && $resolvedAt->gt($sla->sla_resolution_deadline),
-                ]);
-            }
-        }
-
         if ($newStatus === 'solve') {
-            if ($sla && !$sla->resolved_at) {
-                $resolvedAt = now();
-                $sla->update([
-                    'resolved_at' => $resolvedAt,
-                    'is_resolution_breached' => $sla->sla_resolution_deadline && $resolvedAt->gt($sla->sla_resolution_deadline),
-                ]);
-            }
             // Reset is_result_accepted saat admin set solve (user perlu review lagi)
             $record->update(['is_result_accepted' => false]);
         }
@@ -269,7 +219,7 @@ class DataVerificationController extends Controller
         return redirect()->back()->with('success', 'Status tiket berhasil diubah.');
     }
 
-    public function updatePriority(Request $request, Record $record, SlaCalculator $slaCalculator)
+    public function updatePriority(Request $request, Record $record)
     {
         $request->validate([
             'priority' => 'required|string|in:Rendah,Sedang,Tinggi,Urgen',
@@ -281,16 +231,6 @@ class DataVerificationController extends Controller
         if ($oldPriority !== $newPriority) {
             $record->update(['priority' => $newPriority]);
 
-            // Recalculate SLA if ticket is still open/on_proses and tracking exists
-            if ($record->slaTracking && !in_array($record->status, ['solve', 'reject'])) {
-                $responseDeadline = $slaCalculator->calculateResponseDeadline($record);
-                $resolutionDeadline = $slaCalculator->calculateResolutionDeadline($record);
-                
-                $record->slaTracking->update([
-                    'sla_response_deadline' => $responseDeadline,
-                    'sla_resolution_deadline' => $resolutionDeadline,
-                ]);
-            }
 
             RecordLog::create([
                 'ticket_id' => $record->id,

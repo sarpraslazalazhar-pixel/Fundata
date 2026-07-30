@@ -11,7 +11,8 @@ export default function GuestLayout({ children, title }: GuestLayoutProps) {
  const { appConfig } = usePage<any>().props;
 
  return (
- <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-blue-50 via-white to-sky-100 px-4">
+  <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50/60 px-4 relative selection:bg-blue-100 selection:text-blue-900">
+  <div className="absolute inset-0 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:16px_16px] opacity-30"></div>
  {title && <Head title={title} />}
 
 
@@ -34,7 +35,7 @@ export default function GuestLayout({ children, title }: GuestLayoutProps) {
  </Link>
  </div>
 
- <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6">
+  <div className="bg-white rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 p-8 sm:p-10 relative z-10 w-full">
  {children}
  </div>
  </div>

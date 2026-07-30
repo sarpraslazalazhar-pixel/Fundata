@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use App\Models\Record;
-// use App\Models\TicketSlaTracking;
 use App\Models\Unit;
 use App\Models\SubUnit;
 use App\Models\OrgDivisi;
@@ -90,24 +89,7 @@ class LaporanDataController extends Controller
         $totalDonasi = (float) ($statusAggregates->total_donasi ?? 0);
         $totalDonatur = (int) ($statusAggregates->total_donatur ?? 0);
 
-        // 2. SLA Compliance Stats (HIDDEN FOR FUNDATA)
-        $totalSlaAll = 0;
-        $totalResolved = 0;
-        $totalResponded = 0;
-        $responseBreach = 0;
-        $resolutionBreach = 0;
 
-        $responseCompliance = 100;
-        $resolutionCompliance = 100;
-
-        $slaPieChartData = [];
-
-        $slaStats = [
-            'responseCompliance' => $responseCompliance,
-            'resolutionCompliance' => $resolutionCompliance,
-            'totalBreach' => $responseBreach + $resolutionBreach,
-            'totalAll' => $totalSlaAll,
-        ];
 
         // 3. ECharts Data: Trend Bulanan (Based on filters, grouped by month)
         $monthlyRaw = (clone $baseQuery)->selectRaw('MONTH(tickets.created_at) as bulan, COUNT(*) as total')
@@ -160,7 +142,7 @@ class LaporanDataController extends Controller
             ->get();
 
         // 6. Paginated Tickets Data
-        $records = (clone $baseQuery)->with(['user.divisi', 'subUnit.unit', 'slaTracking'])
+        $records = (clone $baseQuery)->with(['user.divisi', 'subUnit.unit'])
             ->latest('tickets.created_at')
             ->paginate(15, ['*'], 'page')
             ->withQueryString();
@@ -192,8 +174,6 @@ class LaporanDataController extends Controller
             'divisiList' => $divisiList,
             'totalTickets' => $totalTickets,
             'statusCounts' => $statusCounts,
-            'slaStats' => $slaStats,
-            'slaPieChartData' => $slaPieChartData,
             'monthlyTrend' => $monthlyTrend,
             'ticketsByUnit' => $ticketsByUnit,
             'topDivisiData' => $topDivisiData,
@@ -203,6 +183,113 @@ class LaporanDataController extends Controller
             'totalDonatur' => $totalDonatur,
             'records' => $records,
             'donaturList' => $donaturList,
+        ]);
+    }
+
+    public function export(Request $request)
+    {
+        $year = $request->input('year');
+        $month = $request->input('month');
+        $dateFrom = $request->input('date_from');
+        $dateTo = $request->input('date_to');
+        $unitId = $request->input('unit_id');
+        $subUnitId = $request->input('sub_unit_id');
+        $status = $request->input('status');
+        $divisiId = $request->input('divisi_id');
+
+        $baseQuery = Record::query()->with(['user.divisi', 'subUnit.unit']);
+
+        if ($dateFrom && $dateTo) {
+            $baseQuery->whereBetween('tickets.created_at', [$dateFrom . ' 00:00:00', $dateTo . ' 23:59:59']);
+        } else {
+            if ($year) $baseQuery->whereYear('tickets.created_at', $year);
+            if ($month) $baseQuery->whereMonth('tickets.created_at', $month);
+        }
+
+        if ($unitId) {
+            $baseQuery->whereHas('subUnit', function ($q) use ($unitId) {
+                $q->where('unit_id', $unitId);
+            });
+        }
+        if ($subUnitId) {
+            $baseQuery->where('tickets.sub_unit_id', $subUnitId);
+        }
+        if ($status) {
+            if (is_array($status)) {
+                $baseQuery->whereIn('tickets.status', $status);
+            } else {
+                $baseQuery->where('tickets.status', $status);
+            }
+        }
+        if ($divisiId) {
+            $baseQuery->whereHas('user', function ($q) use ($divisiId) {
+                $q->where('divisi_id', $divisiId);
+            });
+        }
+
+        $records = $baseQuery->orderBy('tickets.created_at', 'desc')->get();
+
+        // Cari semua kunci dinamis dari form_data
+        $dynamicKeys = [];
+        foreach ($records as $record) {
+            $formData = is_string($record->form_data) ? json_decode($record->form_data, true) : $record->form_data;
+            if (is_array($formData)) {
+                foreach (array_keys($formData) as $key) {
+                    if (!in_array($key, $dynamicKeys)) {
+                        $dynamicKeys[] = $key;
+                    }
+                }
+            }
+        }
+
+        $headers = array_merge([
+            'Nomor Data',
+            'Tanggal Input',
+            'Cabang / Divisi',
+            'Nama Amil',
+            'Nama Donatur',
+            'Nominal Donasi (Rp)',
+            'Layanan',
+            'Status'
+        ], $dynamicKeys);
+
+        $callback = function() use ($records, $headers, $dynamicKeys) {
+            $file = fopen('php://output', 'w');
+            // Menambahkan BOM untuk UTF-8 agar Excel bisa membacanya dengan baik
+            fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
+            fputcsv($file, $headers);
+
+            foreach ($records as $record) {
+                $formData = is_string($record->form_data) ? json_decode($record->form_data, true) : $record->form_data;
+                if (!is_array($formData)) $formData = [];
+
+                $row = [
+                    $record->ticket_number,
+                    $record->created_at->format('Y-m-d H:i:s'),
+                    $record->user->divisi->nama_divisi ?? '-',
+                    $record->user->name ?? $record->user->username ?? '-',
+                    $record->nama_donatur ?? '-',
+                    $record->jumlah_donasi ?? 0,
+                    $record->subUnit->nama_layanan ?? '-',
+                    $record->status,
+                ];
+
+                foreach ($dynamicKeys as $key) {
+                    $val = $formData[$key] ?? '';
+                    if (is_array($val)) {
+                        $val = implode(', ', $val);
+                    }
+                    $row[] = $val;
+                }
+
+                fputcsv($file, $row);
+            }
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => 'attachment; filename="Laporan_Data_' . date('Y-m-d_H-i-s') . '.csv"',
         ]);
     }
 }

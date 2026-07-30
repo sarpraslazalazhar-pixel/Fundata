@@ -41,22 +41,14 @@ class SubUnitController extends Controller
             'icon' => 'nullable|string|max:100',
             'deskripsi' => 'nullable|string',
             'aktif' => 'nullable|boolean',
-            'is_monitored' => 'nullable|boolean',
-            'monitor_kategori' => 'nullable|string|max:255',
-            'monitor_asset_field_id' => 'nullable|exists:form_fields,id',
-            'monitor_date_field_id' => 'nullable|exists:form_fields,id',
-            'monitor_end_date_field_id' => 'nullable|exists:form_fields,id',
-            'monitor_start_field_id' => 'nullable|exists:form_fields,id',
-            'monitor_end_field_id' => 'nullable|exists:form_fields,id',
+
             'is_revision_enabled' => 'nullable|boolean',
         ]);
 
         if ($request->has('aktif')) {
             $validated['aktif'] = $request->boolean('aktif');
         }
-        if ($request->has('is_monitored')) {
-            $validated['is_monitored'] = $request->boolean('is_monitored');
-        }
+
         if ($request->has('is_revision_enabled')) {
             $validated['is_revision_enabled'] = $request->boolean('is_revision_enabled');
         }
@@ -74,22 +66,14 @@ class SubUnitController extends Controller
             'icon' => 'nullable|string|max:100',
             'deskripsi' => 'nullable|string',
             'aktif' => 'nullable|boolean',
-            'is_monitored' => 'nullable|boolean',
-            'monitor_kategori' => 'nullable|string|max:255',
-            'monitor_asset_field_id' => 'nullable|exists:form_fields,id',
-            'monitor_date_field_id' => 'nullable|exists:form_fields,id',
-            'monitor_end_date_field_id' => 'nullable|exists:form_fields,id',
-            'monitor_start_field_id' => 'nullable|exists:form_fields,id',
-            'monitor_end_field_id' => 'nullable|exists:form_fields,id',
+
             'is_revision_enabled' => 'nullable|boolean',
         ]);
 
         if ($request->has('aktif')) {
             $validated['aktif'] = $request->boolean('aktif');
         }
-        if ($request->has('is_monitored')) {
-            $validated['is_monitored'] = $request->boolean('is_monitored');
-        }
+
         if ($request->has('is_revision_enabled')) {
             $validated['is_revision_enabled'] = $request->boolean('is_revision_enabled');
         }

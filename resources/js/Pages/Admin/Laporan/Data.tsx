@@ -98,7 +98,7 @@ export default function LaporanTiket({
  if (subUnitId) params.sub_unit_id = subUnitId;
  if (status) params.status = status;
  if (divisiId) params.divisi_id = divisiId;
- router.get(route('admin.laporan.tiket'), params, { preserveState: true });
+ router.get(route('admin.laporan.data'), params, { preserveState: true });
  };
 
  const handlePrint = () => {
@@ -106,8 +106,18 @@ export default function LaporanTiket({
  };
 
  const handleExportExcel = () => {
- // Implementasi Export Excel bisa memanggil URL backend yang mereturn response CSV/Excel
- alert('Fitur Export Excel akan diproses oleh server berdasarkan filter aktif.');
+ const params: any = {};
+ if (month) params.month = month;
+ if (year) params.year = year;
+ if (dateFrom) params.date_from = dateFrom;
+ if (dateTo) params.date_to = dateTo;
+ if (unitId) params.unit_id = unitId;
+ if (subUnitId) params.sub_unit_id = subUnitId;
+ if (status) params.status = status;
+ if (divisiId) params.divisi_id = divisiId;
+ 
+ const queryString = new URLSearchParams(params).toString();
+ window.location.href = `/admin/laporan/data/export?${queryString}`;
  };
 
  const columns = [

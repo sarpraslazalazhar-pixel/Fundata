@@ -23,7 +23,7 @@ const STATUS_META: Record<string, { label: string; bg: string; icon: React.Eleme
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/Components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/Components/ui/table';
 
-export default function DashboardIndex({ totalTickets, statusCounts, followUpTickets, monthlyChartData, yearlyChartData, dailyChartData, subUnitChartData, units, filters, slaStats, slaPieChartData, slaBarChartData, slaTrendData, slaFilters, csatTrend, tiketBulanan, totalDonasi, totalDonatur, donasiPerCabang, topAmil, topDonatur, riwayatTransaksi }: any) {
+export default function DashboardIndex({ totalTickets, statusCounts, followUpTickets, monthlyChartData, yearlyChartData, dailyChartData, subUnitChartData, units, filters, slaStats, slaPieChartData, slaBarChartData, slaTrendData, slaFilters, csatTrend, tiketBulanan, totalDonasi, totalDonatur, donasiPerCabang, topAmil, topDonatur, riwayatTransaksi, campaignProgress = [] }: any) {
  const [month, setMonth] = useState(filters?.month !== null && filters?.month !== undefined ? String(filters.month) : '');
  const [year, setYear] = useState(filters?.year !== null && filters?.year !== undefined ? String(filters.year) : '');
  const [selectedUnit, setSelectedUnit] = useState('');
@@ -34,6 +34,7 @@ export default function DashboardIndex({ totalTickets, statusCounts, followUpTic
  const [selectedDonasiCabang, setSelectedDonasiCabang] = useState<any>(null);
  const [donaturDetails, setDonaturDetails] = useState<any[]>([]);
  const [isFetchingDonatur, setIsFetchingDonatur] = useState(false);
+ const [selectedCampaign, setSelectedCampaign] = useState<any>(null);
 
  const handleCabangClick = async (cabang: any) => {
  setSelectedDonasiCabang(cabang);
@@ -205,6 +206,41 @@ export default function DashboardIndex({ totalTickets, statusCounts, followUpTic
  })}
  </div>
 
+  {/* CAMPAIGN PROGRESS */}
+  {campaignProgress?.length > 0 && (
+    <div className="space-y-4 mb-8">
+      <h2 className="text-lg font-bold text-slate-800">Progress Program Fundraising</h2>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        {campaignProgress.map((camp: any) => (
+          <Card 
+            key={camp.id} 
+            className="shadow-sm border-slate-200 cursor-pointer hover:shadow-md transition-all duration-200 group hover:-translate-y-0.5"
+            onClick={() => setSelectedCampaign(camp)}
+          >
+            <CardContent className="p-4 space-y-3">
+              <div className="flex justify-between items-start">
+                <h3 className="font-semibold text-sm line-clamp-2 group-hover:text-primary transition-colors">{camp.nama_campaign}</h3>
+                <span className="px-2 py-1 bg-primary/10 text-primary text-xs font-bold rounded-md whitespace-nowrap">
+                  {camp.persentase}%
+                </span>
+              </div>
+              <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+                <div 
+                  className="bg-primary h-2 rounded-full transition-all duration-500" 
+                  style={{ width: `${camp.persentase}%` }} 
+                />
+              </div>
+              <div className="flex justify-between text-xs text-slate-500">
+                <span>Terkumpul: <b className="text-slate-700">Rp {new Intl.NumberFormat('id-ID').format(camp.terkumpul)}</b></span>
+                <span>Target: Rp {new Intl.NumberFormat('id-ID').format(camp.target_dana)}</span>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    </div>
+  )}
+
  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
  <Card className="flex flex-col">
  <CardHeader className="flex flex-row items-center gap-2 pb-3">
@@ -277,22 +313,6 @@ export default function DashboardIndex({ totalTickets, statusCounts, followUpTic
  )
  })}
  </div>
-
- {/* HIDDEN FOR FUNDATA
- <div className="mt-6 border-t pt-5">
- <div className="flex items-center gap-1.5 mb-3 text-sm font-bold text-foreground">
- <AlertTriangle className="h-4 w-4 text-red-500" />
- Status SLA Aktif
- </div>
- <div className="grid grid-cols-2 gap-3">
- ...
- </div>
- </div>
-
- <div className="mt-6 border-t pt-5">
- ...CSAT...
- </div>
- */}
  </CardContent>
  </Card>
  </div>
@@ -335,7 +355,6 @@ export default function DashboardIndex({ totalTickets, statusCounts, followUpTic
  </Card>
  </div>
 
- {/* Daily Chart */}
  <Card className="mb-8">
  <CardHeader className="pb-3">
  <CardTitle className="text-sm font-semibold">Grafik Data Harian (7 Hari Terakhir)</CardTitle>
@@ -495,12 +514,6 @@ export default function DashboardIndex({ totalTickets, statusCounts, followUpTic
  </Card>
  </section>
 
- {/* HIDDEN FOR FUNDATA
- <section className="space-y-6">
- ...
- </section>
- */}
-
  <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
  <DialogContent className="sm:max-w-3xl">
  <DialogHeader>
@@ -561,6 +574,58 @@ export default function DashboardIndex({ totalTickets, statusCounts, followUpTic
  </div>
  </DialogContent>
  </Dialog>
+
+  {/* DETAIL CAMPAIGN DIALOG FOR ADMIN */}
+  <Dialog open={!!selectedCampaign} onOpenChange={(open) => !open && setSelectedCampaign(null)}>
+    <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto p-0 border-0">
+      {selectedCampaign && (
+        <div className="flex flex-col bg-white rounded-2xl overflow-hidden">
+          {selectedCampaign.banner_url ? (
+            <img src={selectedCampaign.banner_url} alt="Banner" className="w-full h-56 object-cover" />
+          ) : (
+            <div className="w-full h-48 bg-gradient-to-r from-primary to-blue-600 flex items-center justify-center">
+              <span className="text-white text-lg font-bold opacity-50">Fundata Campaign</span>
+            </div>
+          )}
+          <div className="p-6 space-y-4">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h2 className="text-2xl font-bold text-slate-800 leading-tight">{selectedCampaign.nama_campaign}</h2>
+                {(selectedCampaign.tgl_mulai || selectedCampaign.tgl_selesai) && (
+                  <p className="text-sm text-slate-500 mt-1">
+                    Periode: {selectedCampaign.tgl_mulai ? new Date(selectedCampaign.tgl_mulai).toLocaleDateString('id-ID') : '-'} {selectedCampaign.tgl_selesai ? `s/d ${new Date(selectedCampaign.tgl_selesai).toLocaleDateString('id-ID')}` : ''}
+                  </p>
+                )}
+              </div>
+              <span className={`px-2.5 py-1 rounded-full text-xs font-semibold shrink-0 ${selectedCampaign.is_active !== false ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                {selectedCampaign.is_active !== false ? 'Aktif' : 'Nonaktif'}
+              </span>
+            </div>
+            
+            {selectedCampaign.deskripsi && (
+              <p className="text-sm text-slate-600 leading-relaxed whitespace-pre-wrap">{selectedCampaign.deskripsi}</p>
+            )}
+            
+            <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 space-y-3 mt-4">
+              <div className="flex justify-between text-sm font-semibold text-slate-700">
+                <span>Progress Fundraising: {selectedCampaign.persentase}%</span>
+              </div>
+              <div className="w-full bg-slate-200 rounded-full h-2.5 overflow-hidden">
+                <div 
+                  className="bg-primary h-full rounded-full transition-all duration-500" 
+                  style={{ width: `${selectedCampaign.persentase}%` }} 
+                />
+              </div>
+              <div className="flex justify-between text-xs text-slate-500 font-medium pt-1">
+                <span className="text-slate-700">Terkumpul: <b className="text-emerald-600">Rp {new Intl.NumberFormat('id-ID').format(selectedCampaign.terkumpul || selectedCampaign.records_sum_jumlah_donasi || 0)}</b></span>
+                <span>Target: Rp {new Intl.NumberFormat('id-ID').format(selectedCampaign.target_dana)}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </DialogContent>
+  </Dialog>
  </AdminLayout>
  );
 }

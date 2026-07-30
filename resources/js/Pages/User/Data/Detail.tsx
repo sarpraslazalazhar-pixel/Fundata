@@ -9,7 +9,7 @@ import { TicketAttachmentList } from '@/Components/TicketAttachmentList';
 import { formatDateId, formatTicketId } from '@/lib/utils';
 import { AttachmentViewer } from '@/Components/AttachmentViewer';
 import { FileText, XCircle, Eye, CheckCircle2, Edit2 } from 'lucide-react';
-import { CsatDialog } from '@/Components/CsatDialog';
+
 import { ConfirmDialog } from '@/Components/ConfirmDialog';
 import ImageEditorModal from '@/Components/FormBuilder/ImageEditorModal';
 
@@ -26,7 +26,7 @@ export default function Detail({ ticket, formFields, maxRevisions }: DetailProps
  const [showConfirm, setShowConfirm] = useState(false);
  const [editorOpen, setEditorOpen] = useState(false);
  const [fileToEdit, setFileToEdit] = useState<{file: File, index: number, form: 'reply' | 'rev'} | null>(null);
- const showCsat = ['solve', 'selesai'].includes(String(ticket.status || '').toLowerCase());
+
  const canCancel = ticket.status === 'open';
 
  const handleCancel = () => {
@@ -94,9 +94,7 @@ export default function Detail({ ticket, formFields, maxRevisions }: DetailProps
  <p className="text-slate-500 mt-1">Dibuat pada {formatDateId(ticket.created_at)}</p>
  </div>
  <div className="flex items-center gap-2">
- {showCsat && (
- <CsatDialog ticketId={ticket.id} existingRating={ticket.csat?.rating} existingKomentar={ticket.csat?.komentar} />
- )}
+
  {canCancel && (
  <Button variant="destructive" onClick={() => setShowConfirm(true)}>
  <XCircle className="h-4 w-4 mr-1" /> Batalkan
@@ -237,6 +235,12 @@ export default function Detail({ ticket, formFields, maxRevisions }: DetailProps
  <span className="text-sm text-slate-500">Sub Unit:</span>
  <p className="font-medium">{ticket.sub_unit?.nama_layanan || '-'}</p>
  </div>
+ {ticket.campaign && (
+ <div>
+ <span className="text-sm text-slate-500">Campaign / Program:</span>
+ <p className="font-medium text-blue-700">{ticket.campaign.nama_campaign}</p>
+ </div>
+ )}
  </CardContent>
  </Card>
 

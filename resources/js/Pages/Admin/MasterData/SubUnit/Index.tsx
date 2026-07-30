@@ -25,13 +25,7 @@ interface SubUnit {
  unit: Unit;
  form_fields_count: number;
  form_fields?: any[];
- is_monitored: boolean;
- monitor_kategori?: string;
- monitor_asset_field_id?: number;
- monitor_date_field_id?: number;
- monitor_end_date_field_id?: number;
- monitor_start_field_id?: number;
- monitor_end_field_id?: number;
+
  is_revision_enabled: boolean;
 }
 
@@ -45,13 +39,7 @@ export default function SubUnitIndex({ subUnits, units, filters }: { subUnits: a
  nama_layanan: '',
  deskripsi: '',
  aktif: true,
- is_monitored: false,
- monitor_kategori: '',
- monitor_asset_field_id: '',
- monitor_date_field_id: '',
- monitor_end_date_field_id: '',
- monitor_start_field_id: '',
- monitor_end_field_id: '',
+
  is_revision_enabled: false,
  });
 
@@ -100,13 +88,7 @@ export default function SubUnitIndex({ subUnits, units, filters }: { subUnits: a
  nama_layanan: subUnit.nama_layanan,
  deskripsi: subUnit.deskripsi || '',
  aktif: subUnit.aktif,
- is_monitored: subUnit.is_monitored || false,
- monitor_kategori: subUnit.monitor_kategori || '',
- monitor_asset_field_id: subUnit.monitor_asset_field_id?.toString() || '',
- monitor_date_field_id: subUnit.monitor_date_field_id?.toString() || '',
- monitor_end_date_field_id: subUnit.monitor_end_date_field_id?.toString() || '',
- monitor_start_field_id: subUnit.monitor_start_field_id?.toString() || '',
- monitor_end_field_id: subUnit.monitor_end_field_id?.toString() || '',
+
  is_revision_enabled: subUnit.is_revision_enabled || false,
  });
  };
@@ -192,7 +174,7 @@ export default function SubUnitIndex({ subUnits, units, filters }: { subUnits: a
  <TableHead>Kanal Layanan</TableHead>
  <TableHead>Status</TableHead>
  <TableHead>Revisi</TableHead>
- <TableHead>Live Monitor</TableHead>
+
  <TableHead>Jml Form Field</TableHead>
  <TableHead>Aksi</TableHead>
  </TableRow>
@@ -205,7 +187,7 @@ export default function SubUnitIndex({ subUnits, units, filters }: { subUnits: a
  <TableCell>{item.unit?.nama_unit}</TableCell>
  <TableCell>{item.aktif ? 'Aktif' : 'Nonaktif'}</TableCell>
  <TableCell>{item.is_revision_enabled ? <span className="text-green-600 font-medium">Ya</span> : '-'}</TableCell>
- <TableCell>{item.is_monitored ? <span className="bg-green-100 text-green-700 px-2 py-1 rounded text-xs">Aktif</span> : '-'}</TableCell>
+
  <TableCell>{item.form_fields_count}</TableCell>
  <TableCell className="space-x-2">
  <Button variant="outline" size="icon" onClick={() => openEdit(item)}>
@@ -269,78 +251,7 @@ export default function SubUnitIndex({ subUnits, units, filters }: { subUnits: a
  </select>
  </div>
  
- <div className="border-t pt-4 mt-4">
- <h4 className="font-medium text-sm mb-4">Pengaturan Live Monitor</h4>
- <div className="space-y-4">
- <div className="space-y-2">
- <Label>Tampilkan di Live Monitor?</Label>
- <select className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring" value={data.is_monitored ? '1' : '0'} onChange={e => setData('is_monitored', e.target.value === '1')}>
- <option value="1">Ya</option>
- <option value="0">Tidak</option>
- </select>
- </div>
- 
- {data.is_monitored && (
- <>
- <div className="space-y-2">
- <Label>Kategori (misal: "Kendaraan", "Proyektor")</Label>
- <Input value={data.monitor_kategori} onChange={e => setData('monitor_kategori', e.target.value)} placeholder="Contoh: Ruang Rapat" />
- </div>
- {editSubUnit?.form_fields?.length ? (
- <>
- <div className="space-y-2">
- <Label>Field Form: Nama Aset</Label>
- <select className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring" value={data.monitor_asset_field_id} onChange={e => setData('monitor_asset_field_id', e.target.value)}>
- <option value="">-- Pilih Field --</option>
- {editSubUnit.form_fields.map((f: any) => (
- <option key={f.id} value={f.id}>{f.label}</option>
- ))}
- </select>
- </div>
- <div className="space-y-2">
- <Label>Field Form: Tanggal Pemakaian (Mulai)</Label>
- <select className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring" value={data.monitor_date_field_id || ''} onChange={e => setData('monitor_date_field_id', e.target.value)}>
- <option value="">-- Gunakan Waktu Mulai --</option>
- {editSubUnit.form_fields.map((f: any) => (
- <option key={f.id} value={f.id}>{f.label}</option>
- ))}
- </select>
- </div>
- <div className="space-y-2">
- <Label>Field Form: Tanggal Selesai (Opsional)</Label>
- <select className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring" value={data.monitor_end_date_field_id || ''} onChange={e => setData('monitor_end_date_field_id', e.target.value)}>
- <option value="">-- Sama Dengan Tanggal Mulai --</option>
- {editSubUnit.form_fields.map((f: any) => (
- <option key={f.id} value={f.id}>{f.label}</option>
- ))}
- </select>
- </div>
- <div className="space-y-2">
- <Label>Field Form: Waktu Mulai</Label>
- <select className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring" value={data.monitor_start_field_id} onChange={e => setData('monitor_start_field_id', e.target.value)}>
- <option value="">-- Pilih Field --</option>
- {editSubUnit.form_fields.map((f: any) => (
- <option key={f.id} value={f.id}>{f.label}</option>
- ))}
- </select>
- </div>
- <div className="space-y-2">
- <Label>Field Form: Waktu Selesai</Label>
- <select className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring" value={data.monitor_end_field_id} onChange={e => setData('monitor_end_field_id', e.target.value)}>
- <option value="">-- Pilih Field --</option>
- {editSubUnit.form_fields.map((f: any) => (
- <option key={f.id} value={f.id}>{f.label}</option>
- ))}
- </select>
- </div>
- </>
- ) : (
- <p className="text-sm text-amber-600 bg-amber-50 p-2 rounded">Silakan buat Form Field terlebih dahulu sebelum memilih mapping.</p>
- )}
- </>
- )}
- </div>
- </div>
+
 
  <div className="flex justify-end pt-4"><Button type="submit">Update</Button></div>
  </form>

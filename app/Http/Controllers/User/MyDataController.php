@@ -17,7 +17,7 @@ class MyDataController extends Controller
     public function index(Request $request)
     {
         $query = Record::where('user_id', auth()->id())
-            ->with(['unit', 'subUnit']);
+            ->with(['unit', 'subUnit', 'campaign']);
 
         // Filter status
         if ($request->has('status') && $request->status) {
@@ -90,11 +90,11 @@ class MyDataController extends Controller
         $record->load([
             'unit',
             'subUnit',
+            'campaign',
             'orgDivisi',
             'orgUnit',
             'jabatan',
             'attachments',
-            'csat',
             'logs' => function ($q) {
                 $q->orderBy('timestamp', 'desc');
             },

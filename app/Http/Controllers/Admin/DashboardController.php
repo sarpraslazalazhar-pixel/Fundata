@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\Record;
 // use App\Models\TicketSlaTracking;
 use App\Models\Unit;
+use App\Models\RoomVehicleBooking;
+use App\Models\Campaign;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -164,17 +166,6 @@ class DashboardController extends Controller
             ->limit(10)
             ->get();
 
-        // ── CSAT Trend (rata-rata per bulan, 12 bulan terakhir) ──
-        $csatTrend = DB::table('csats')
-            ->select(
-                DB::raw("DATE_FORMAT(created_at, '%Y-%m') as bulan"),
-                DB::raw('ROUND(AVG(rating), 2) as rata_rata'),
-                DB::raw('COUNT(*) as total'),
-            )
-            ->where('created_at', '>=', now()->subYear())
-            ->groupBy(DB::raw("DATE_FORMAT(created_at, '%Y-%m')"))
-            ->orderBy('bulan')
-            ->get();
 
         // ── Tiket Bulanan (12 bulan terakhir) ──
         $tiketBulanan = DB::table('tickets')
@@ -189,20 +180,7 @@ class DashboardController extends Controller
             ->orderBy('bulan')
             ->get();
 
-        // ── SLA Compliance Data (HIDDEN FOR FUNDATA) ──
-        $slaPeriod = $request->get('sla_period', now()->format('Y-m'));
-        $slaUnitId = $request->get('sla_unit_id');
 
-        $responseCompliance = 100;
-        $resolutionCompliance = 100;
-        $responseBreach = 0;
-        $resolutionBreach = 0;
-        $totalWarning = 0;
-        $totalAll = 0;
-
-        $slaPieChartData = [];
-        $slaBarChartData = [];
-        $slaTrendData = [];
 
         // ── Daily Chart (7 Hari Terakhir) ──
         $startDate = now()->subDays(6)->startOfDay();
@@ -257,13 +235,28 @@ class DashboardController extends Controller
             ];
         })->sortByDesc('total_donasi')->values();
 
+        // ── Campaign Progress ──
+        $campaigns = Campaign::where('is_active', true)->orderBy('nama_campaign')->get();
+        $campaignProgress = $campaigns->map(function($campaign) {
+            $terkumpul = Record::where('campaign_id', $campaign->id)
+                ->whereNotIn('status', ['reject', 'dibatalkan'])
+                ->sum('jumlah_donasi') ?? 0;
+            return [
+                'id' => $campaign->id,
+                'nama_campaign' => $campaign->nama_campaign,
+                'target_dana' => (float) $campaign->target_dana,
+                'terkumpul' => (float) $terkumpul,
+                'persentase' => $campaign->target_dana > 0 ? min(100, round(($terkumpul / $campaign->target_dana) * 100, 2)) : 0,
+            ];
+        });
+
         return Inertia::render('Admin/Dashboard/Index', [
             'totalTickets' => $totalTickets,
             'statusCounts' => $statusCounts,
             'topAmil' => $topAmil,
             'topDonatur' => $topDonatur,
             'riwayatTransaksi' => $riwayatTransaksi,
-            'csatTrend' => $csatTrend,
+
             'tiketBulanan' => $tiketBulanan,
             'followUpTickets' => $followUpTickets,
             'monthlyChartData' => $monthlyChartData,
@@ -272,23 +265,10 @@ class DashboardController extends Controller
             'subUnitChartData' => $subUnitChartData,
             'units' => $units,
             'filters' => ['month' => $month, 'year' => $year],
-            'slaStats' => [
-                'responseCompliance' => $responseCompliance,
-                'resolutionCompliance' => $resolutionCompliance,
-                'totalBreach' => $responseBreach + $resolutionBreach,
-                'totalWarning' => $totalWarning,
-                'totalAll' => $totalAll,
-            ],
-            'slaPieChartData' => $slaPieChartData,
             'totalDonasi' => $totalDonasi,
             'totalDonatur' => $totalDonatur,
-            'slaBarChartData' => $slaBarChartData,
-            'slaTrendData' => $slaTrendData,
-            'slaFilters' => [
-                'period' => $slaPeriod,
-                'unitId' => $slaUnitId,
-            ],
             'donasiPerCabang' => $donasiPerCabang,
+            'campaignProgress' => $campaignProgress,
         ]);
     }
 
