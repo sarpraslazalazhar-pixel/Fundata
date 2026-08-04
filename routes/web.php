@@ -68,6 +68,17 @@ Route::middleware('auth')->group(function () {
     // Profil User
     Route::put('/profil', [\App\Http\Controllers\User\ProfileController::class, 'update'])->name('profil.update');
     Route::post('/profil/avatar', [\App\Http\Controllers\User\ProfileController::class, 'uploadAvatar'])->name('profil.upload-avatar');
+
+    // User Messaging Page
+    Route::get('/pesan', [\App\Http\Controllers\MessageController::class, 'userIndex'])->name('pesan.index');
+});
+
+// Shared Messaging API (User & Admin)
+Route::middleware('auth:web,admin')->group(function () {
+    Route::get('/api/messages/contacts', [\App\Http\Controllers\MessageController::class, 'contacts']);
+    Route::get('/api/messages/context-options', [\App\Http\Controllers\MessageController::class, 'contextOptions']);
+    Route::get('/api/messages/{userId}', [\App\Http\Controllers\MessageController::class, 'fetchMessages']);
+    Route::post('/api/messages', [\App\Http\Controllers\MessageController::class, 'store']);
 });
 
 // API dropdown (dependent dropdown & dynamic form)
@@ -91,6 +102,8 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::post('logout', [AdminLoginController::class, 'logout'])->name('logout');
         Route::get('/dashboard', [\App\Http\Controllers\Admin\DashboardController::class, 'index'])->name('dashboard');
         Route::get('/dashboard/donasi-cabang/{divisiId?}/{orgUnitId?}', [\App\Http\Controllers\Admin\DashboardController::class, 'getDonaturByCabang'])->name('dashboard.donasi-cabang');
+        
+        Route::get('/pesan', [\App\Http\Controllers\MessageController::class, 'adminIndex'])->name('pesan.index');
 
         // Profil Admin
         Route::put('/profil', [\App\Http\Controllers\Admin\ProfileController::class, 'update'])->name('profil.update');

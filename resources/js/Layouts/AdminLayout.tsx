@@ -17,6 +17,7 @@ import {
   User,
   MoreHorizontal,
   Sparkles,
+  MessageSquare,
 } from 'lucide-react';
 import { Button } from '@/Components/ui/button';
 import { Sheet, SheetContent } from '@/Components/ui/sheet';
@@ -66,6 +67,27 @@ function isRouteActive(url: string, routePath?: string): boolean {
 const adminNavItems: NavItem[] = [
   { type: 'link', label: 'Dashboard', icon: LayoutDashboard, route: '/admin/dashboard' },
   { type: 'link', label: 'Verifikasi Data', icon: Ticket, route: '/admin/verifikasi-data' },
+  { type: 'link', label: 'Pesan', icon: MessageSquare, route: '/admin/pesan' },
+
+  { type: 'header', label: 'PENGATURAN', permissionGroup: 'akses-konfigurasi' },
+  {
+    type: 'dropdown',
+    label: 'Sistem',
+    icon: Settings,
+    permissionGroup: 'akses-konfigurasi',
+    children: [
+      { label: 'Form Builder', icon: FileEdit, route: '/admin/peraturan-form', permissionGroup: 'akses-konfigurasi' },
+      { label: 'Konfigurasi Sistem', icon: Settings, route: '/admin/konfigurasi', permissionGroup: 'akses-konfigurasi' },
+    ]
+  },
+
+  { type: 'header', label: 'LAPORAN', permissionGroup: 'akses-laporan' },
+  { type: 'link', label: 'Semua Data', icon: Database, route: '/admin/laporan/data', permissionGroup: 'akses-laporan' },
+
+  { type: 'header', label: 'PENGGUNA & AKSES', permissionGroup: 'akses-manajemen-akun' },
+  { type: 'link', label: 'Hak Akses', icon: Shield, route: '/admin/manajemen-peran', permissionGroup: 'akses-manajemen-akun' },
+  { type: 'link', label: 'Verifikator', icon: Shield, route: '/admin/manajemen-operator', permissionGroup: 'akses-manajemen-akun' },
+  { type: 'link', label: 'Pengguna', icon: Users, route: '/admin/manajemen-user', permissionGroup: 'akses-manajemen-akun' },
 
   { type: 'header', label: 'MASTER DATA' },
   {
@@ -90,26 +112,6 @@ const adminNavItems: NavItem[] = [
       { label: 'Jabatan', icon: Users, route: '/admin/master/jabatan', permissionGroup: 'akses-struktur' },
     ]
   },
-
-  { type: 'header', label: 'PENGATURAN', permissionGroup: 'akses-konfigurasi' },
-  {
-    type: 'dropdown',
-    label: 'Sistem',
-    icon: Settings,
-    permissionGroup: 'akses-konfigurasi',
-    children: [
-      { label: 'Form Builder', icon: FileEdit, route: '/admin/peraturan-form', permissionGroup: 'akses-konfigurasi' },
-      { label: 'Konfigurasi Sistem', icon: Settings, route: '/admin/konfigurasi', permissionGroup: 'akses-konfigurasi' },
-    ]
-  },
-
-  { type: 'header', label: 'LAPORAN', permissionGroup: 'akses-laporan' },
-  { type: 'link', label: 'Semua Data', icon: Database, route: '/admin/laporan/data', permissionGroup: 'akses-laporan' },
-
-  { type: 'header', label: 'PENGGUNA & AKSES', permissionGroup: 'akses-manajemen-akun' },
-  { type: 'link', label: 'Hak Akses', icon: Shield, route: '/admin/manajemen-peran', permissionGroup: 'akses-manajemen-akun' },
-  { type: 'link', label: 'Verifikator', icon: Shield, route: '/admin/manajemen-operator', permissionGroup: 'akses-manajemen-akun' },
-  { type: 'link', label: 'Pengguna', icon: Users, route: '/admin/manajemen-user', permissionGroup: 'akses-manajemen-akun' },
 ];
 
 function NavLink({ item, active, isCollapsed }: { item: NavItem; active: boolean; isCollapsed: boolean }) {
@@ -537,7 +539,7 @@ export default function AdminLayout({ children, title }: AdminLayoutProps) {
   const bottomNavItems: BottomNavItem[] = [
     { label: 'Dashboard', icon: LayoutDashboard, route: '/admin/dashboard' },
     { label: 'Verifikasi', icon: Ticket, route: '/admin/verifikasi-data' },
-    { label: 'Semua Data', icon: Database, route: '/admin/laporan/data' },
+    { label: 'Pesan', icon: MessageSquare, route: '/admin/pesan' },
     { label: 'Lainnya', icon: MoreHorizontal, onClick: () => setSidebarOpen(true) },
   ];
 

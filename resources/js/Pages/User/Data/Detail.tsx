@@ -12,6 +12,8 @@ import { FileText, XCircle, Eye, CheckCircle2, Edit2 } from 'lucide-react';
 
 import { ConfirmDialog } from '@/Components/ConfirmDialog';
 import ImageEditorModal from '@/Components/FormBuilder/ImageEditorModal';
+import ShareToChatModal from '@/Components/Chat/ShareToChatModal';
+import { MessageSquareShare } from 'lucide-react';
 
 interface DetailProps {
  ticket: any;
@@ -25,6 +27,7 @@ export default function Detail({ ticket, formFields, maxRevisions }: DetailProps
  const [showRevForm, setShowRevForm] = useState(false);
  const [showConfirm, setShowConfirm] = useState(false);
  const [editorOpen, setEditorOpen] = useState(false);
+ const [shareOpen, setShareOpen] = useState(false);
  const [fileToEdit, setFileToEdit] = useState<{file: File, index: number, form: 'reply' | 'rev'} | null>(null);
 
  const canCancel = ticket.status === 'open';
@@ -94,6 +97,9 @@ export default function Detail({ ticket, formFields, maxRevisions }: DetailProps
  <p className="text-slate-500 mt-1">Dibuat pada {formatDateId(ticket.created_at)}</p>
  </div>
  <div className="flex items-center gap-2">
+ <Button variant="default" onClick={() => router.get(route('pesan.index'), { context_id: ticket.id, context_title: ticket.judul || ticket.nama_pemohon || `Tiket #${formatTicketId(ticket.id)}` })}>
+ <MessageSquareShare className="h-4 w-4 mr-1" /> Tanyakan Data Ini
+ </Button>
 
  {canCancel && (
  <Button variant="destructive" onClick={() => setShowConfirm(true)}>
@@ -101,7 +107,7 @@ export default function Detail({ ticket, formFields, maxRevisions }: DetailProps
  </Button>
  )}
  <Link href={route('data.riwayat')}>
- <Button variant="outline">Kembali ke Riwayat</Button>
+ <Button variant="outline">Kembali</Button>
  </Link>
  </div>
  </div>
@@ -395,6 +401,14 @@ export default function Detail({ ticket, formFields, maxRevisions }: DetailProps
  }}
  />
  )}
+
+ <ShareToChatModal
+ open={shareOpen}
+ onOpenChange={setShareOpen}
+ contextType="App\Models\Record"
+ contextId={ticket.id}
+ contextTitle={`Tiket #TKT-${formatTicketId(ticket.id)} - ${ticket.sub_unit?.nama_layanan || 'Detail'}`}
+ />
  </UserLayout>
  );
 }

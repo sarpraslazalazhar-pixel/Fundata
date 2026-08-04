@@ -8,8 +8,9 @@ import { TicketTimeline } from '@/Components/TicketTimeline';
 import { TicketAttachmentList } from '@/Components/TicketAttachmentList';
 import { formatDateId, formatTicketId } from '@/lib/utils';
 import { AttachmentViewer } from '@/Components/AttachmentViewer';
-import { FileText, ArrowLeft, AlertTriangle, CheckCircle2, XCircle, Download, Eye, Edit2 } from 'lucide-react';
+import { FileText, ArrowLeft, AlertTriangle, CheckCircle2, XCircle, Download, Eye, Edit2, MessageSquareShare } from 'lucide-react';
 import ImageEditorModal from '@/Components/FormBuilder/ImageEditorModal';
+import ShareToChatModal from '@/Components/Chat/ShareToChatModal';
 
 const validTransitions: Record<string, string[]> = {
  open: ['on_proses', 'reject', 'pending'],
@@ -27,6 +28,7 @@ export default function TicketDetail({ ticket, formFields, operators }: any) {
  const canAssignOperator = auth?.permissions?.includes('akses-assign-operator');
 
  const [editorOpen, setEditorOpen] = useState(false);
+ const [shareOpen, setShareOpen] = useState(false);
  const [fileToEdit, setFileToEdit] = useState<{file: File, index: number, form: 'admin'} | null>(null);
 
  const { data: statusData, setData: setStatusData, post: postStatus, processing: processingStatus, errors: errorsStatus, reset: resetStatus } = useForm({ status: '', catatan: '', general_attachments: [] as File[], _method: 'patch' });
@@ -102,6 +104,9 @@ export default function TicketDetail({ ticket, formFields, operators }: any) {
  <div className="flex items-center gap-3 mb-6">
  <Button variant="outline" size="sm" onClick={() => router.get(route('admin.data.index'))}>
  <ArrowLeft className="w-4 h-4 mr-1" /> Kembali
+ </Button>
+ <Button variant="default" size="sm" onClick={() => router.get(route('admin.pesan.index'), { context_id: ticket.id, context_title: ticket.judul || ticket.nama_pemohon || `Tiket #${formatTicketId(ticket.id)}` })}>
+ <MessageSquareShare className="h-4 w-4 mr-1" /> Tanyakan Data Ini
  </Button>
  <h1 className="text-2xl font-bold flex items-center gap-3">
  #TKT-{formatTicketId(ticket.id)} <StatusBadge status={ticket.status} />
@@ -295,6 +300,14 @@ export default function TicketDetail({ ticket, formFields, operators }: any) {
  }}
  />
  )}
+
+ <ShareToChatModal
+ open={shareOpen}
+ onOpenChange={setShareOpen}
+ contextType="App\Models\Record"
+ contextId={ticket.id}
+ contextTitle={`Tiket #TKT-${formatTicketId(ticket.id)} - ${ticket.sub_unit?.nama_layanan || 'Detail'}`}
+ />
  </AdminLayout>
  );
 }

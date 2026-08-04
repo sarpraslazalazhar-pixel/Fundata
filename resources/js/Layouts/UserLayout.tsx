@@ -11,7 +11,8 @@ import {
   ChevronLeft,
   ChevronRight,
   MoreHorizontal,
-  Sparkles
+  Sparkles,
+  MessageSquare
 } from 'lucide-react';
 import { Button } from '@/Components/ui/button';
 import { Sheet, SheetContent } from '@/Components/ui/sheet';
@@ -44,6 +45,7 @@ interface NavItem {
 const userNavItems: NavItem[] = [
   { label: 'Dashboard', icon: LayoutDashboard, route: '/dashboard' },
   { label: 'Input Data', icon: PlusCircle, route: '/data/buat' },
+  { label: 'Pesan', icon: MessageSquare, route: '/pesan' },
   { label: 'Data Saya', icon: History, route: '/data/saya' },
 ];
 
@@ -281,7 +283,7 @@ export default function UserLayout({ children, title }: UserLayoutProps) {
   const bottomNavItems: BottomNavItem[] = [
     { label: 'Dashboard', icon: LayoutDashboard, route: '/dashboard' },
     { label: 'Input Data', icon: PlusCircle, route: '/data/buat' },
-    { label: 'Data Saya', icon: History, route: '/data/saya' },
+    { label: 'Pesan', icon: MessageSquare, route: '/pesan' },
     { label: 'Lainnya', icon: MoreHorizontal, onClick: () => setSidebarOpen(true) },
   ];
 

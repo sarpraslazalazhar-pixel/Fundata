@@ -9,3 +9,7 @@ Broadcast::channel('App.Models.User.{id}', function ($user, $id) {
 Broadcast::channel('App.Models.Admin.{id}', function ($user, $id) {
     return (int) $user->id === (int) $id;
 }, ['guards' => ['admin']]);
+
+Broadcast::channel('user.{id}', function ($user, $id) {
+    return (int) $user->id === (int) $id;
+});

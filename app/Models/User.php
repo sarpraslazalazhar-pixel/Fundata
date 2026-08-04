@@ -48,7 +48,7 @@ class User extends Authenticatable
 
     public function tickets()
     {
-        return $this->hasMany(Ticket::class);
+        return $this->hasMany(Ticket::class, 'user_id');
     }
 
     public function divisi()
@@ -64,5 +64,16 @@ class User extends Authenticatable
     public function jabatan()
     {
         return $this->belongsTo(OrgJabatan::class, 'jabatan_id');
+    }
+
+    public function conversations()
+    {
+        return Conversation::where(function ($query) {
+            $query->where('participant_one_type', static::class)
+                  ->where('participant_one_id', $this->id);
+        })->orWhere(function ($query) {
+            $query->where('participant_two_type', static::class)
+                  ->where('participant_two_id', $this->id);
+        });
     }
 }

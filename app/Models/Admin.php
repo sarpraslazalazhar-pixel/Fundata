@@ -49,5 +49,16 @@ class Admin extends Authenticatable
     {
         return $this->belongsToMany(SubUnit::class, 'admin_sub_unit', 'admin_id', 'sub_unit_id');
     }
+
+    public function conversations()
+    {
+        return Conversation::where(function ($query) {
+            $query->where('participant_one_type', static::class)
+                  ->where('participant_one_id', $this->id);
+        })->orWhere(function ($query) {
+            $query->where('participant_two_type', static::class)
+                  ->where('participant_two_id', $this->id);
+        });
+    }
 }
 
