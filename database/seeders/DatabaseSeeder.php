@@ -18,14 +18,18 @@ class DatabaseSeeder extends Seeder
             OrgDivisiSeeder::class,
             OrgUnitSeeder::class,
             OrgJabatanSeeder::class,
-            UnitSeeder::class,
-            SubUnitSeeder::class,
-            FormFieldSeeder::class,
             AdminSeeder::class,
             UserSeeder::class,
             SlaConfigSeeder::class,
             ReminderConfigSeeder::class,
             SystemConfigSeeder::class,
+        ]);
+
+        // Seeders generated from actual local DB data
+        $this->call([
+            UnitsTableSeeder::class,
+            SubUnitsTableSeeder::class,
+            FormFieldsTableSeeder::class,
         ]);
 
         DB::statement('SET FOREIGN_KEY_CHECKS=1');
