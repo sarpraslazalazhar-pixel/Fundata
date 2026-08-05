@@ -335,7 +335,7 @@ export default function ChatInterface({ guard }: { guard?: 'user' | 'admin' }) {
                                 return (
                                     <div key={msg.id || idx} className={`flex flex-col ${isMe ? 'items-end' : 'items-start'} gap-1 max-w-[85%] md:max-w-[70%] ${isMe ? 'self-end' : 'self-start'}`}>
                                         {msg.context && (
-                                            <a href={`/data/${msg.context_id}`} className="block w-full text-xs bg-white/90 backdrop-blur border shadow-sm rounded-xl p-3 mb-1 hover:bg-slate-50 transition-colors">
+                                            <a href={userModelType === 'App\\Models\\Admin' ? `/admin/verifikasi-data/${msg.context_id}` : `/data/${msg.context_id}`} className="block w-full text-xs bg-white/90 backdrop-blur border shadow-sm rounded-xl p-3 mb-1 hover:bg-slate-50 transition-colors">
                                                 <div className="font-bold text-primary mb-1 border-b pb-1">Terkait Data:</div>
                                                 <div className="truncate text-slate-700 font-medium">{msg.context.nama_pemohon || msg.context.judul || 'Data Context'}</div>
                                             </a>
