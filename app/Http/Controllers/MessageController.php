@@ -55,28 +55,27 @@ class MessageController extends Controller
         $currentUser = $this->getCurrentUser($request);
         $currentType = $this->getCurrentType($request);
 
-        // Get Users
-        $users = User::when($currentType === User::class, function($q) use ($currentUser) {
-            return $q->where('id', '!=', $currentUser->id);
-        })->get(['id', 'name', 'username', 'avatar_path'])->map(function($user) {
-            $user->type = 'user';
-            $user->model_type = User::class;
-            // Provide a fallback name if name is null
-            if (empty($user->name)) {
-                $user->name = $user->username ?: 'Unknown User';
-            }
-            return $user;
-        });
+        // Jika yang login adalah User biasa, dia TIDAK BOLEH melihat User lain di kontaknya (hanya bisa chat ke Admin)
+        if ($currentType === User::class) {
+            $users = collect([]);
+        } else {
+            // Jika yang login adalah Admin, dia bisa melihat semua User
+            $users = User::get(['id', 'name', 'username', 'avatar_path'])->map(function($user) {
+                $user->type = 'user';
+                $user->model_type = User::class;
+                if (empty($user->name)) {
+                    $user->name = $user->username ?: 'Unknown User';
+                }
+                return $user;
+            });
+        }
 
         // Get Admins
         $admins = Admin::when($currentType === Admin::class, function($q) use ($currentUser) {
             return $q->where('id', '!=', $currentUser->id);
-        })
-        ->where('username', '!=', 'superadmin')
-        ->get(['id', 'name', 'username', 'avatar_path'])->map(function($admin) {
+        })->get(['id', 'name', 'username', 'avatar_path'])->map(function($admin) {
             $admin->type = 'admin';
             $admin->model_type = Admin::class;
-            // The getNameAttribute in Admin will work correctly now since we selected username
             return $admin;
         });
 

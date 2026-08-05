@@ -95,6 +95,17 @@ const adminNavItems: NavItem[] = [
   { type: 'header', label: 'MASTER DATA' },
   {
     type: 'dropdown',
+    label: 'Struktur',
+    icon: Users,
+    permissionGroup: 'akses-struktur',
+    children: [
+      { label: 'Wilayah', icon: Users, route: '/admin/master/divisi', permissionGroup: 'akses-struktur' },
+      { label: 'Cabang', icon: Users, route: '/admin/master/unit-organisasi', permissionGroup: 'akses-struktur' },
+      { label: 'Jabatan', icon: Users, route: '/admin/master/jabatan', permissionGroup: 'akses-struktur' },
+    ]
+  },
+  {
+    type: 'dropdown',
     label: 'Kategori Data',
     icon: Database,
     permissionGroup: 'akses-layanan',
@@ -104,17 +115,6 @@ const adminNavItems: NavItem[] = [
       { label: 'Metode Pembayaran', icon: Database, route: '/admin/master/metode-pembayaran', permissionGroup: 'akses-layanan' },
       { label: 'Campaign/Program', icon: Database, route: '/admin/master/campaigns', permissionGroup: 'akses-layanan' },
       { label: 'Akad', icon: Database, route: '/admin/master/akad', permissionGroup: 'akses-layanan' },
-    ]
-  },
-  {
-    type: 'dropdown',
-    label: 'Struktur',
-    icon: Users,
-    permissionGroup: 'akses-struktur',
-    children: [
-      { label: 'Wilayah', icon: Users, route: '/admin/master/divisi', permissionGroup: 'akses-struktur' },
-      { label: 'Cabang', icon: Users, route: '/admin/master/unit-organisasi', permissionGroup: 'akses-struktur' },
-      { label: 'Jabatan', icon: Users, route: '/admin/master/jabatan', permissionGroup: 'akses-struktur' },
     ]
   },
 ];
