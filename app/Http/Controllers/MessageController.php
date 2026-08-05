@@ -58,18 +58,23 @@ class MessageController extends Controller
         // Get Users
         $users = User::when($currentType === User::class, function($q) use ($currentUser) {
             return $q->where('id', '!=', $currentUser->id);
-        })->get(['id', 'name', 'avatar_path'])->map(function($user) {
+        })->get(['id', 'name', 'username', 'avatar_path'])->map(function($user) {
             $user->type = 'user';
             $user->model_type = User::class;
+            // Provide a fallback name if name is null
+            if (empty($user->name)) {
+                $user->name = $user->username ?: 'Unknown User';
+            }
             return $user;
         });
 
         // Get Admins
         $admins = Admin::when($currentType === Admin::class, function($q) use ($currentUser) {
             return $q->where('id', '!=', $currentUser->id);
-        })->get(['id', 'name', 'avatar_path'])->map(function($admin) {
+        })->get(['id', 'name', 'username', 'avatar_path'])->map(function($admin) {
             $admin->type = 'admin';
             $admin->model_type = Admin::class;
+            // The getNameAttribute in Admin will work correctly now since we selected username
             return $admin;
         });
 

@@ -4,11 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Record;
-// use App\Models\TicketSlaTracking;
-use App\Models\Unit;
-use App\Models\RoomVehicleBooking;
 use App\Models\Campaign;
-use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
@@ -24,31 +20,65 @@ class DashboardController extends Controller
         if ($year) $baseQuery->whereYear('created_at', $year);
         if ($month) $baseQuery->whereMonth('created_at', $month);
 
-        $statusAggregates = (clone $baseQuery)->selectRaw('
-            COUNT(*) as total_tickets,
-            SUM(CASE WHEN status = "open" THEN 1 ELSE 0 END) as open_count,
-            SUM(CASE WHEN status = "on_proses" THEN 1 ELSE 0 END) as on_proses_count,
-            SUM(CASE WHEN status = "pending" THEN 1 ELSE 0 END) as pending_count,
-            SUM(CASE WHEN status IN ("solve", "selesai") THEN 1 ELSE 0 END) as solve_count,
-            SUM(CASE WHEN status = "reject" THEN 1 ELSE 0 END) as reject_count,
-            SUM(CASE WHEN status NOT IN ("reject", "dibatalkan") THEN jumlah_donasi ELSE 0 END) as total_donasi,
-            SUM(CASE WHEN status NOT IN ("reject", "dibatalkan") AND donatur_id IS NOT NULL THEN 1 ELSE 0 END) as total_donatur
+        $validBase = (clone $baseQuery)->whereNotIn('status', ['reject', 'dibatalkan']);
+
+        // ── KPI ──
+        $kpi = (clone $baseQuery)->selectRaw('
+            COUNT(*) as total_transaksi,
+            COALESCE(SUM(CASE WHEN status NOT IN ("reject", "dibatalkan") THEN jumlah_donasi ELSE 0 END), 0) as total_donasi,
+            COUNT(CASE WHEN status NOT IN ("reject", "dibatalkan") AND donatur_id IS NOT NULL THEN 1 END) as total_donatur
         ')->first();
 
-        $totalTickets = (int) ($statusAggregates->total_tickets ?? 0);
-        $statusCounts = [
-            'open' => (int) ($statusAggregates->open_count ?? 0),
-            'on_proses' => (int) ($statusAggregates->on_proses_count ?? 0),
-            'pending' => (int) ($statusAggregates->pending_count ?? 0),
-            'solve' => (int) ($statusAggregates->solve_count ?? 0),
-            'reject' => (int) ($statusAggregates->reject_count ?? 0),
-        ];
+        $totalTransaksi = (int) ($kpi->total_transaksi ?? 0);
+        $totalDonasi = (float) ($kpi->total_donasi ?? 0);
+        $totalDonatur = (int) ($kpi->total_donatur ?? 0);
+        $fundraiserAktif = (clone $validBase)->distinct()->count('user_id');
 
-        $totalDonasi = (float) ($statusAggregates->total_donasi ?? 0);
-        $totalDonatur = (int) ($statusAggregates->total_donatur ?? 0);
+        // ── Tren Nominal per Bulan ──
+        $monthlyRaw = (clone $validBase)
+            ->selectRaw('MONTH(created_at) as bulan, COALESCE(SUM(jumlah_donasi), 0) as total_nominal')
+            ->groupBy('bulan')
+            ->get();
+        $monthlyTrend = collect(range(1, 12))->map(function ($b) use ($monthlyRaw) {
+            return [
+                'bulan' => date('M', mktime(0, 0, 0, $b, 1)),
+                'total' => (float) ($monthlyRaw->firstWhere('bulan', $b)?->total_nominal ?? 0),
+            ];
+        });
 
-        // ── Top 10 Amil (berdasarkan nominal donasi) ──
-        $topAmilQuery = DB::table('tickets')
+        // ── Distribusi Nominal per Metode Pembayaran ──
+        $metodeFieldIds = \App\Models\FormField::where('tipe_field', 'metode_bayar')->pluck('id')->toArray();
+        $paymentMethodMap = \App\Models\PaymentMethod::all()->keyBy('id');
+
+        $distribusiMetode = collect();
+        if (!empty($metodeFieldIds)) {
+            $metodeRaw = (clone $validBase)
+                ->select(['id', 'form_data', 'jumlah_donasi'])
+                ->get();
+
+            foreach ($metodeRaw as $row) {
+                $formData = is_string($row->form_data) ? json_decode($row->form_data, true) : $row->form_data;
+                if (!is_array($formData)) continue;
+
+                foreach ($metodeFieldIds as $fid) {
+                    if (isset($formData[$fid]) && $formData[$fid] !== null && $formData[$fid] !== '') {
+                        $mid = $formData[$fid];
+                        if (isset($paymentMethodMap[$mid])) {
+                            $name = $paymentMethodMap[$mid]->nama_bank;
+                            $distribusiMetode[$name] = ($distribusiMetode[$name] ?? 0) + (float) $row->jumlah_donasi;
+                        }
+                        break;
+                    }
+                }
+            }
+        }
+        $distribusiMetode = $distribusiMetode
+            ->map(fn($total, $name) => ['name' => $name, 'value' => round($total, 2)])
+            ->sortByDesc('value')
+            ->values();
+
+        // ── Top 10 Fundraiser ──
+        $topFundraiserQuery = DB::table('tickets')
             ->join('users', 'tickets.user_id', '=', 'users.id')
             ->select(
                 'users.username',
@@ -57,82 +87,21 @@ class DashboardController extends Controller
                 DB::raw('SUM(tickets.jumlah_donasi) as total_donasi')
             )
             ->whereNotIn('tickets.status', ['reject', 'dibatalkan']);
-            
-        if ($year) $topAmilQuery->whereYear('tickets.created_at', $year);
-        if ($month) $topAmilQuery->whereMonth('tickets.created_at', $month);
-        
-        $topAmil = $topAmilQuery->groupBy('users.id', 'users.username', 'users.name')
+
+        if ($year) $topFundraiserQuery->whereYear('tickets.created_at', $year);
+        if ($month) $topFundraiserQuery->whereMonth('tickets.created_at', $month);
+
+        $topFundraiser = $topFundraiserQuery->groupBy('users.id', 'users.username', 'users.name')
             ->orderByDesc('total_donasi')
             ->limit(10)
             ->get();
 
+        // ── Data Perlu Ditindak Lanjuti ──
         $followUpTickets = Record::with(['user.divisi', 'unit', 'subUnit'])
             ->whereIn('status', ['open', 'pending'])
             ->latest()
             ->limit(10)
             ->get();
-
-        $units = Unit::where('aktif', true)->orderBy('nama_unit')->get();
-        $unitNames = $units->pluck('nama_unit', 'id');
-
-        // Monthly chart — only if year is selected
-        $monthlyChartData = [];
-        if ($year) {
-            $monthlyRaw = Record::selectRaw('MONTH(created_at) as bulan, unit_id, COUNT(*) as total')
-                ->whereYear('created_at', $year)
-                ->groupBy('bulan', 'unit_id')
-                ->with('unit')
-                ->get();
-
-            $monthlyChartData = collect(range(1, 12))->map(function ($b) use ($monthlyRaw, $unitNames) {
-                $row = ['bulan' => date('M', mktime(0, 0, 0, $b, 1))];
-                foreach ($unitNames as $id => $name) {
-                    $row[$name] = $monthlyRaw->firstWhere(fn($r) => $r->bulan == $b && $r->unit_id == $id)?->total ?? 0;
-                }
-                return $row;
-            });
-        }
-
-        // Yearly chart — all years regardless of filter
-        $yearlyRaw = Record::selectRaw('YEAR(created_at) as tahun, unit_id, COUNT(*) as total')
-            ->groupBy('tahun', 'unit_id')
-            ->with('unit')
-            ->get();
-
-        $yearlyChartData = $yearlyRaw
-            ->groupBy('tahun')
-            ->sortKeys()
-            ->map(function ($items, $tahun) use ($unitNames) {
-                $row = ['tahun' => (string) $tahun];
-                foreach ($unitNames as $id => $name) {
-                    $row[$name] = $items->firstWhere('unit_id', $id)?->total ?? 0;
-                }
-                return $row;
-            })->values();
-
-        // Sub unit chart — per unit + aggregate across all
-        $subUnitQuery = Record::selectRaw('unit_id, sub_unit_id, COUNT(*) as total')
-            ->whereNotNull('sub_unit_id');
-        if ($year) $subUnitQuery->whereYear('created_at', $year);
-        if ($month) $subUnitQuery->whereMonth('created_at', $month);
-        $subUnitRaw = $subUnitQuery->groupBy('unit_id', 'sub_unit_id')
-            ->with(['unit', 'subUnit'])
-            ->get();
-
-        $subUnitChartData = $subUnitRaw
-            ->groupBy('unit_id')
-            ->map(fn($items) => $items->map(fn($i) => [
-                'name' => $i->subUnit?->nama_layanan ?? 'Unknown',
-                'value' => $i->total,
-            ])->values());
-
-        // Add aggregate across all units
-        $subUnitChartData['_all'] = $subUnitRaw
-            ->groupBy('sub_unit_id')
-            ->map(fn($items) => [
-                'name' => $items->first()->subUnit?->nama_layanan ?? 'Unknown',
-                'value' => $items->sum('total'),
-            ])->values();
 
         // ── Top 10 Donatur ──
         $topDonaturQuery = DB::table('tickets')
@@ -147,7 +116,7 @@ class DashboardController extends Controller
 
         if ($year) $topDonaturQuery->whereYear('tickets.created_at', $year);
         if ($month) $topDonaturQuery->whereMonth('tickets.created_at', $month);
-        
+
         $topDonatur = $topDonaturQuery->groupBy('donaturs.id', 'donaturs.nama_lengkap')
             ->orderByDesc('total_donasi')
             ->limit(10)
@@ -158,49 +127,13 @@ class DashboardController extends Controller
             ->select('id', 'user_id', 'donatur_id', 'jumlah_donasi', 'created_at', 'status', 'form_data')
             ->whereNotIn('status', ['reject', 'dibatalkan'])
             ->where('jumlah_donasi', '>', 0);
-            
+
         if ($year) $riwayatTransaksiQuery->whereYear('created_at', $year);
         if ($month) $riwayatTransaksiQuery->whereMonth('created_at', $month);
-        
+
         $riwayatTransaksi = $riwayatTransaksiQuery->latest()
             ->limit(10)
             ->get();
-
-
-        // ── Tiket Bulanan (12 bulan terakhir) ──
-        $tiketBulanan = DB::table('tickets')
-            ->select(
-                DB::raw("DATE_FORMAT(created_at, '%Y-%m') as bulan"),
-                DB::raw('COUNT(*) as total'),
-                DB::raw("SUM(CASE WHEN status IN ('Selesai', 'Solve', 'selesai', 'solve') THEN 1 ELSE 0 END) as selesai"),
-                DB::raw("SUM(CASE WHEN status NOT IN ('Selesai', 'Solve', 'selesai', 'solve') THEN 1 ELSE 0 END) as aktif"),
-            )
-            ->where('created_at', '>=', now()->subYear())
-            ->groupBy(DB::raw("DATE_FORMAT(created_at, '%Y-%m')"))
-            ->orderBy('bulan')
-            ->get();
-
-
-
-        // ── Daily Chart (7 Hari Terakhir) ──
-        $startDate = now()->subDays(6)->startOfDay();
-        $dailyRaw = Record::selectRaw('DATE(created_at) as date, unit_id, COUNT(*) as total')
-            ->where('created_at', '>=', $startDate)
-            ->groupBy('date', 'unit_id')
-            ->get();
-
-        $dates = collect();
-        for ($i = 6; $i >= 0; $i--) {
-            $dates->push(now()->subDays($i)->format('Y-m-d'));
-        }
-
-        $dailyChartData = $dates->map(function ($dateStr) use ($dailyRaw, $unitNames) {
-            $row = ['date' => $dateStr];
-            foreach ($unitNames as $id => $name) {
-                $row[$name] = $dailyRaw->firstWhere(fn($r) => $r->date === $dateStr && $r->unit_id === $id)?->total ?? 0;
-            }
-            return $row;
-        });
 
         // ── Donasi per Cabang ──
         $donasiCabangQuery = Record::select(
@@ -219,7 +152,7 @@ class DashboardController extends Controller
 
         if ($year) $donasiCabangQuery->whereYear('tickets.created_at', $year);
         if ($month) $donasiCabangQuery->whereMonth('tickets.created_at', $month);
-        
+
         $donasiPerCabang = $donasiCabangQuery->get()->map(function ($item) {
             $divisiName = $item->nama_divisi ?? 'Tanpa Divisi';
             $unitName = $item->nama_unit_organisasi;
@@ -237,7 +170,7 @@ class DashboardController extends Controller
 
         // ── Campaign Progress ──
         $campaigns = Campaign::where('is_active', true)->orderBy('nama_campaign')->get();
-        $campaignProgress = $campaigns->map(function($campaign) {
+        $campaignProgress = $campaigns->map(function ($campaign) {
             $terkumpul = Record::where('campaign_id', $campaign->id)
                 ->whereNotIn('status', ['reject', 'dibatalkan'])
                 ->sum('jumlah_donasi') ?? 0;
@@ -251,24 +184,19 @@ class DashboardController extends Controller
         });
 
         return Inertia::render('Admin/Dashboard/Index', [
-            'totalTickets' => $totalTickets,
-            'statusCounts' => $statusCounts,
-            'topAmil' => $topAmil,
+            'totalDonasi' => $totalDonasi,
+            'totalTransaksi' => $totalTransaksi,
+            'totalDonatur' => $totalDonatur,
+            'fundraiserAktif' => $fundraiserAktif,
+            'monthlyTrend' => $monthlyTrend,
+            'distribusiMetode' => $distribusiMetode,
+            'topFundraiser' => $topFundraiser,
             'topDonatur' => $topDonatur,
             'riwayatTransaksi' => $riwayatTransaksi,
-
-            'tiketBulanan' => $tiketBulanan,
             'followUpTickets' => $followUpTickets,
-            'monthlyChartData' => $monthlyChartData,
-            'yearlyChartData' => $yearlyChartData,
-            'dailyChartData' => $dailyChartData,
-            'subUnitChartData' => $subUnitChartData,
-            'units' => $units,
-            'filters' => ['month' => $month, 'year' => $year],
-            'totalDonasi' => $totalDonasi,
-            'totalDonatur' => $totalDonatur,
             'donasiPerCabang' => $donasiPerCabang,
             'campaignProgress' => $campaignProgress,
+            'filters' => ['month' => $month, 'year' => $year],
         ]);
     }
 
@@ -354,4 +282,3 @@ class DashboardController extends Controller
         return response()->json($donaturList);
     }
 }
-

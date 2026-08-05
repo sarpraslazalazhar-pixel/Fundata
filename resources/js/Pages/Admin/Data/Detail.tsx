@@ -23,7 +23,7 @@ const statusLabels: Record<string, string> = {
  open: 'Baru', on_proses: 'Diproses', pending: 'Tertunda', solve: 'Selesai', reject: 'Ditolak', dibatalkan: 'Dibatalkan', need_revision: 'Butuh Revisi', accepted: 'Diterima User',
 };
 
-export default function TicketDetail({ ticket, formFields, operators }: any) {
+export default function TicketDetail({ ticket, formFields, operators, akads, paymentMethods }: any) {
  const { auth } = usePage().props as any;
  const canAssignOperator = auth?.permissions?.includes('akses-assign-operator');
 
@@ -68,6 +68,19 @@ export default function TicketDetail({ ticket, formFields, operators }: any) {
 
  const value = ticket.form_data?.[field.id];
  if (value === undefined || value === null || value === '') return '-';
+ 
+ if (field.tipe_field === 'donatur_lookup') {
+   return ticket.donatur ? `${ticket.donatur.nama_lengkap} (${ticket.donatur.no_telp})` : value;
+ }
+ if (field.tipe_field === 'akad') {
+   const akad = akads?.find((a: any) => a.id == value);
+   return akad ? akad.nama_akad : value;
+ }
+ if (field.tipe_field === 'metode_bayar') {
+   const pm = paymentMethods?.find((p: any) => p.id == value);
+   return pm ? pm.nama_bank : value;
+ }
+
  if (field.tipe_field === 'nominal_rp') {
  return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(Number(value) || 0);
  }

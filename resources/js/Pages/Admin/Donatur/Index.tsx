@@ -207,11 +207,6 @@ export default function DonaturIndex({ donaturs, filters }: { donaturs: any; fil
                             <TableCell>
                                 <div className="font-medium flex items-center gap-2">
                                     {donatur.nama_lengkap}
-                                    {donatur.is_approved === false && (
-                                        <span className="text-[10px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded border border-amber-200">
-                                            Menunggu Approval
-                                        </span>
-                                    )}
                                 </div>
                                 {donatur.tipe === 'Individu' && donatur.jenis_kelamin && (
                                     <div className="text-xs text-slate-500">{donatur.jenis_kelamin === 'L' ? 'Laki-Laki' : 'Perempuan'}</div>
@@ -231,11 +226,6 @@ export default function DonaturIndex({ donaturs, filters }: { donaturs: any; fil
                             </TableCell>
                             <TableCell className="max-w-[200px] truncate" title={donatur.alamat}>{donatur.alamat || '-'}</TableCell>
                             <TableCell className="space-x-2 whitespace-nowrap">
-                                {donatur.is_approved === false && (
-                                    <Button variant="outline" size="icon" title="Setujui Donatur" className="text-emerald-500 hover:text-emerald-600 hover:bg-emerald-50 border-emerald-200" onClick={() => handleApprove(donatur.id)}>
-                                        <CheckCircle className="w-4 h-4" />
-                                    </Button>
-                                )}
                                 <Link href={route('admin.donatur.history', donatur.id)}>
                                     <Button variant="outline" size="icon" title="Riwayat Donasi" className="text-blue-500 hover:text-blue-600">
                                         <History className="w-4 h-4" />

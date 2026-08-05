@@ -59,7 +59,7 @@ export default function DonaturHistory({ donatur, records }: { donatur: any; rec
                             <TableHead>No. Tiket</TableHead>
                             <TableHead>Status</TableHead>
                             <TableHead>Layanan / Program</TableHead>
-                            <TableHead>Penginput</TableHead>
+                            <TableHead>Fundraiser</TableHead>
                             <TableHead className="text-right">Jumlah Donasi</TableHead>
                             <TableHead className="text-center">Aksi</TableHead>
                         </TableRow>
@@ -94,7 +94,7 @@ export default function DonaturHistory({ donatur, records }: { donatur: any; rec
                                     {record.jumlah_donasi ? `Rp ${new Intl.NumberFormat('id-ID').format(record.jumlah_donasi)}` : '-'}
                                 </TableCell>
                                 <TableCell className="text-center">
-                                    <Link href={route('data.show', record.id)}>
+                                    <Link href={route('admin.data.show', record.id)}>
                                         <Button variant="outline" size="sm" className="h-8 gap-1" title="Lihat Detail">
                                             <Eye className="w-3.5 h-3.5" />
                                             <span className="sr-only sm:not-sr-only sm:text-xs">Detail</span>

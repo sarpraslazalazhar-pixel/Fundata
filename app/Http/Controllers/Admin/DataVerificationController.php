@@ -107,6 +107,8 @@ class DataVerificationController extends Controller
             'ticket' => $record,
             'formFields' => $formFields,
             'operators' => $operators,
+            'paymentMethods' => \App\Models\PaymentMethod::all(),
+            'akads' => \App\Models\Akad::all(),
         ]);
     }
 

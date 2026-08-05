@@ -127,6 +127,22 @@ export default function FieldRenderer({ field, value, onChange, errors, paymentM
           />
         );
       }
+      case 'datetime_past': {
+        const todayDateTime = new Date();
+        todayDateTime.setMinutes(todayDateTime.getMinutes() - todayDateTime.getTimezoneOffset());
+        const maxDateTime = todayDateTime.toISOString().slice(0, 16);
+        return (
+          <motion.input
+            type="datetime-local"
+            whileFocus={inputFocusAnimation}
+            className={baseInputClasses}
+            value={value || ''}
+            max={maxDateTime}
+            onChange={e => onChange(field.id, e.target.value)}
+            required={field.wajib}
+          />
+        );
+      }
       case 'dropdown':
         return (
           <motion.select

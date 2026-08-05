@@ -180,7 +180,7 @@ export default function ChatInterface({ guard }: { guard?: 'user' | 'admin' }) {
         }
     };
 
-    const filteredContacts = contacts.filter(c => c.name.toLowerCase().includes(search.toLowerCase()));
+    const filteredContacts = contacts.filter(c => (c.name || c.username || 'Unknown').toLowerCase().includes(search.toLowerCase()));
 
     return (
         <div className="flex h-[calc(100vh-140px)] md:h-[calc(100vh-100px)] border rounded-2xl bg-white overflow-hidden shadow-sm relative">

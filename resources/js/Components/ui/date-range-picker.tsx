@@ -42,15 +42,14 @@ export function DateRangePicker({ dateFrom, dateTo, onDateFromChange, onDateToCh
  <Flatpickr
  value={dates}
  onChange={handleDateChange}
- options={{
- mode: 'range',
- dateFormat: 'Y-m-d',
- altInput: true,
- altFormat: 'd/m/Y',
- allowInput: false,
- placeholder: 'Pilih rentang tanggal...'
- }}
- className="bg-transparent border-none outline-none text-sm w-full cursor-pointer h-8 placeholder-slate-400"
+  options={{
+  mode: 'range',
+  dateFormat: 'Y-m-d',
+  altInput: true,
+  altFormat: 'd/m/Y',
+  allowInput: false,
+  }}
+  className="bg-transparent border-none outline-none text-sm w-full cursor-pointer h-8 placeholder-slate-400"
  />
  </div>
  );

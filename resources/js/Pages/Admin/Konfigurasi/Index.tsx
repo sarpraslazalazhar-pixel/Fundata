@@ -72,7 +72,7 @@ export default function KonfigurasiIndex({ configs }: any) {
  <TabsTrigger value="branding">Branding</TabsTrigger>
  <TabsTrigger value="notifikasi">Notifikasi</TabsTrigger>
  <TabsTrigger value="operasional">Operasional</TabsTrigger>
- <TabsTrigger value="scheduler">Scheduler</TabsTrigger>
+ <TabsTrigger value="sistem">Sistem</TabsTrigger>
  </TabsList>
 
  <form onSubmit={handleSubmit}>
@@ -218,50 +218,27 @@ export default function KonfigurasiIndex({ configs }: any) {
  </div>
  </form>
 
- <TabsContent value="scheduler" className="space-y-4 mt-4">
+ <TabsContent value="sistem" className="space-y-4 mt-4">
  <Card>
- <CardHeader><CardTitle>Jalankan Scheduler Manual</CardTitle></CardHeader>
+ <CardHeader><CardTitle>Maintenance Cache (Shared Hosting)</CardTitle></CardHeader>
  <CardContent className="space-y-4">
  <p className="text-sm text-muted-foreground">
- Gunakan tombol di bawah untuk menjalankan pengecekan SLA dan reminder secara manual.
- Ini berguna untuk testing atau jika cron job di server belum aktif.
+ Gunakan jika hosting tidak menyediakan akses terminal (SSH). Hanya admin dengan akses konfigurasi yang bisa menjalankan ini.
  </p>
  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
  <Button
  variant="outline"
- onClick={() => router.post(route('admin.scheduler.sla-check'))}
+ onClick={() => router.post(route('admin.system.optimize'))}
  className="justify-start"
  >
- 🔍 Cek SLA Sekarang
+ ⚡ Optimalkan Cache (config, route, view)
  </Button>
  <Button
  variant="outline"
- onClick={() => router.post(route('admin.scheduler.booking-reminder'))}
+ onClick={() => router.post(route('admin.system.clear'))}
  className="justify-start"
  >
- 📅 Kirim Reminder Booking
- </Button>
- <Button
- variant="outline"
- onClick={() => router.post(route('admin.scheduler.pending-reminder'))}
- className="justify-start"
- >
- ⏳ Kirim Reminder Tiket Pending
- </Button>
- <Button
- variant="outline"
- onClick={() => router.post(route('admin.scheduler.csat-reminder'))}
- className="justify-start"
- >
- ⭐ Kirim Reminder CSAT
- </Button>
- </div>
- <div className="pt-3 border-t">
- <Button
- onClick={() => router.post(route('admin.scheduler.run-all'))}
- className="w-full"
- >
- 🚀 Jalankan Semua Scheduler
+ 🧹 Bersihkan Semua Cache
  </Button>
  </div>
  </CardContent>

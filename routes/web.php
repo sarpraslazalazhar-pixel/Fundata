@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Artisan;
 use App\Http\Controllers\Auth\UserLoginController;
 use App\Http\Controllers\Auth\AdminLoginController;
 use App\Http\Controllers\Auth\ForgotPasswordController;
@@ -17,22 +18,6 @@ Route::get('/', HomeController::class);
 // TV Dashboard (Public)
 Route::get('/tv', [\App\Http\Controllers\TvDashboardController::class, 'index'])->name('tv.index');
 Route::get('/system/notification-sound', [\App\Http\Controllers\Admin\SystemConfigController::class, 'serveNotificationSound'])->name('system.notification-sound');
-
-// System Optimization for Shared Hosting
-Route::get('/system/optimize', function() {
-    \Illuminate\Support\Facades\Artisan::call('config:cache');
-    \Illuminate\Support\Facades\Artisan::call('route:cache');
-    \Illuminate\Support\Facades\Artisan::call('view:cache');
-    return 'System optimized successfully. <a href="/">Go back to Home</a>';
-});
-
-Route::get('/system/clear', function() {
-    \Illuminate\Support\Facades\Artisan::call('config:clear');
-    \Illuminate\Support\Facades\Artisan::call('route:clear');
-    \Illuminate\Support\Facades\Artisan::call('view:clear');
-    \Illuminate\Support\Facades\Artisan::call('cache:clear');
-    return 'System cache cleared successfully. <a href="/">Go back to Home</a>';
-});
 
 Route::middleware('guest')->group(function () {
     Route::get('login', [UserLoginController::class, 'showLoginForm'])->name('login');
@@ -117,6 +102,24 @@ Route::prefix('admin')->name('admin.')->group(function () {
         });
 
 
+        // Maintenance Cache (Shared Hosting) - hanya admin dengan akses konfigurasi
+        Route::middleware('permission:akses-konfigurasi')->prefix('system')->group(function () {
+            Route::post('/optimize', function () {
+                Artisan::call('config:cache');
+                Artisan::call('route:cache');
+                Artisan::call('view:cache');
+                return back()->with('success', 'Cache berhasil dioptimalkan (config, route, view).');
+            })->name('system.optimize');
+
+            Route::post('/clear', function () {
+                Artisan::call('config:clear');
+                Artisan::call('route:clear');
+                Artisan::call('view:clear');
+                Artisan::call('cache:clear');
+                return back()->with('success', 'Semua cache berhasil dibersihkan.');
+            })->name('system.clear');
+        });
+
         // Konfigurasi Sistem
         Route::middleware('permission:akses-konfigurasi')->group(function () {
             Route::get('/konfigurasi', [SystemConfigController::class, 'index'])->name('konfigurasi.index');
@@ -125,13 +128,6 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::post('/konfigurasi/upload-banner', [SystemConfigController::class, 'uploadBanner'])->name('konfigurasi.upload-banner');
             Route::post('/konfigurasi/upload-favicon', [SystemConfigController::class, 'uploadFavicon'])->name('konfigurasi.upload-favicon');
             Route::post('/konfigurasi/upload-sound', [SystemConfigController::class, 'uploadSound'])->name('konfigurasi.upload-sound');
-        });
-
-        // Manual Scheduler - Sebagian di-hide untuk Fundata
-        Route::prefix('scheduler')->name('scheduler.')->group(function () {
-            // Route::post('/booking-reminder', [\App\Http\Controllers\Admin\SchedulerController::class, 'runBookingReminder'])->name('booking-reminder');
-            Route::post('/pending-reminder', [\App\Http\Controllers\Admin\SchedulerController::class, 'runPendingReminder'])->name('pending-reminder');
-            Route::post('/run-all', [\App\Http\Controllers\Admin\SchedulerController::class, 'runAll'])->name('run-all');
         });
 
         // Manajemen Akun

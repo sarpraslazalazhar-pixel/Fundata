@@ -114,6 +114,8 @@ class MyDataController extends Controller
             'ticket' => $record,
             'formFields' => $formFields,
             'maxRevisions' => $maxRevisions,
+            'paymentMethods' => \App\Models\PaymentMethod::all(),
+            'akads' => \App\Models\Akad::all(),
         ]);
     }
 

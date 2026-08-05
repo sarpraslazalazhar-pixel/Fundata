@@ -72,8 +72,14 @@ class DataInputController extends Controller
                 }
                 if (stripos($field->label, 'donasi') !== false || stripos($field->label, 'jumlah donasi') !== false || stripos($field->label, 'nominal') !== false) {
                     // Hanya set ke jumlah_donasi jika tipe data numerik/nominal_rp, atau string angka
-                    if (is_numeric(str_replace(['Rp', '.', ',', ' '], '', $val))) {
-                        $extractedJumlahDonasi = (float) str_replace(['Rp', '.', ',', ' '], '', $val);
+                    $cleanVal = str_replace(['Rp', '.', ',', ' '], '', $val);
+                    if (is_numeric($cleanVal)) {
+                        $extractedJumlahDonasi = (float) $cleanVal;
+                        if ($extractedJumlahDonasi >= 9999999999999.99) {
+                            throw \Illuminate\Validation\ValidationException::withMessages([
+                                "form_data.{$fieldKey}" => "Jumlah donasi terlalu besar. Maksimal yang diizinkan adalah Rp 9.999.999.999.999"
+                            ]);
+                        }
                     }
                 }
             }

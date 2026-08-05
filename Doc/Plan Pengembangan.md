@@ -1,8 +1,10 @@
-- [ ] Buatkan Modul Chat
+- [x] Buatkan Modul Chat
 - [x] sesuaikan navbar admin
-- [ ] cari donatur tanggal donasi 
-- [ ] filter tanggal transaksi & waktu
-- [ ] filter metode pembayaran
+- [x] cari donatur tanggal donasi 
+- [x] filter tanggal transaksi & waktu
+- [x] filter metode pembayaran
 - [x] Modul Database Donator
 - [x] database metode bayar
-- [ ] database akad/layanan (ada infak, zakat, campaign, wakaf dan DSKL)
+- [x] database akad/layanan (ada infak, zakat, campaign, wakaf dan DSKL)
+
+Fundraiser

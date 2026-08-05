@@ -15,6 +15,7 @@ interface DataTableProps<T> {
   data: T[];
   keyExtractor: (item: T) => string | number;
   emptyMessage?: string;
+  columnBorders?: boolean;
 }
 
 const tbodyVariants = {
@@ -45,7 +46,7 @@ const rowVariants = {
   },
 };
 
-export function DataTable<T>({ columns, data, keyExtractor, emptyMessage = 'Tidak ada data.' }: DataTableProps<T>) {
+export function DataTable<T>({ columns, data, keyExtractor, emptyMessage = 'Tidak ada data.', columnBorders = false }: DataTableProps<T>) {
   if (data.length === 0) {
     return (
       <motion.div
@@ -64,7 +65,7 @@ export function DataTable<T>({ columns, data, keyExtractor, emptyMessage = 'Tida
       <TableHeader>
         <TableRow className="hover:bg-transparent border-b border-slate-200">
           {columns.map((col) => (
-            <TableHead key={col.key} className={cn("font-semibold text-slate-700 text-xs uppercase tracking-wider", col.className)}>
+            <TableHead key={col.key} className={cn("font-semibold text-slate-700 text-xs uppercase tracking-wider", col.className, columnBorders && "border-l border-slate-200 first:border-l-0")}>
               {col.header}
             </TableHead>
           ))}
@@ -88,7 +89,7 @@ export function DataTable<T>({ columns, data, keyExtractor, emptyMessage = 'Tida
                 className="transition-colors duration-150 border-b border-slate-100/80"
               >
                 {columns.map((col) => (
-                  <TableCell key={col.key} className={cn("py-3 text-sm text-slate-700", col.className)}>
+                  <TableCell key={col.key} className={cn("py-3 text-sm text-slate-700", col.className, columnBorders && "border-l border-slate-200 first:border-l-0")}>
                     {col.render ? col.render(item) : String((item as any)[col.key] ?? '')}
                   </TableCell>
                 ))}

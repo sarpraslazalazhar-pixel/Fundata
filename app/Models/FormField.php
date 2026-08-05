@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class FormField extends Model
 {
     const TIPE_FIELDS = [
-        'teks_pendek', 'teks_panjang', 'angka', 'tanggal', 'waktu', 'datetime',
+        'teks_pendek', 'teks_panjang', 'angka', 'tanggal', 'waktu', 'datetime', 'datetime_past',
         'dropdown', 'radio', 'checkbox', 'multi_pilih', 'upload_gambar',
         'upload_file', 'nominal_rp', 'info_peraturan', 'donatur_lookup',
         'metode_bayar', 'akad'

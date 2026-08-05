@@ -19,9 +19,11 @@ interface DetailProps {
  ticket: any;
  formFields: any[];
  maxRevisions: number;
+ akads?: any[];
+ paymentMethods?: any[];
 }
 
-export default function Detail({ ticket, formFields, maxRevisions }: DetailProps) {
+export default function Detail({ ticket, formFields, maxRevisions, akads, paymentMethods }: DetailProps) {
  const { data: replyData, setData: setReplyData, post: postReply, processing: processingReply, errors: errorsReply, reset: resetReply } = useForm({ catatan: '', general_attachments: [] as File[], _method: 'post' });
  const { data: revData, setData: setRevData, post: postRev, processing: processingRev, errors: errorsRev, reset: resetRev } = useForm({ catatan: '', general_attachments: [] as File[], _method: 'post' });
  const [showRevForm, setShowRevForm] = useState(false);
@@ -54,6 +56,19 @@ export default function Detail({ ticket, formFields, maxRevisions }: DetailProps
 
  const value = ticket.form_data?.[field.id];
  if (value === undefined || value === null || value === '') return '-';
+
+ if (field.tipe_field === 'donatur_lookup') {
+   return ticket.donatur ? `${ticket.donatur.nama_lengkap} (${ticket.donatur.no_telp})` : value;
+ }
+ if (field.tipe_field === 'akad') {
+   const akad = akads?.find((a: any) => a.id == value);
+   return akad ? akad.nama_akad : value;
+ }
+ if (field.tipe_field === 'metode_bayar') {
+   const pm = paymentMethods?.find((p: any) => p.id == value);
+   return pm ? pm.nama_bank : value;
+ }
+
  if (field.tipe_field === 'nominal_rp') {
  return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(Number(value) || 0);
  }
