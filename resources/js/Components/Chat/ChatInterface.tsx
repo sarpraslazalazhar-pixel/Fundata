@@ -331,7 +331,7 @@ export default function ChatInterface({ guard }: { guard?: 'user' | 'admin' }) {
 
                         <div className="flex-1 overflow-y-auto p-4 md:p-6 flex flex-col gap-4">
                             {messages.map((msg, idx) => {
-                                const isMe = msg.sender_id === user.id && msg.sender_type === userModelType;
+                                const isMe = String(msg.sender_id) === String(user.id) && msg.sender_type === userModelType;
                                 return (
                                     <div key={msg.id || idx} className={`flex flex-col ${isMe ? 'items-end' : 'items-start'} gap-1 max-w-[85%] md:max-w-[70%] ${isMe ? 'self-end' : 'self-start'}`}>
                                         {msg.context && (
