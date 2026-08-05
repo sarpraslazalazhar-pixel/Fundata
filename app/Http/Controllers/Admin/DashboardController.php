@@ -32,7 +32,7 @@ class DashboardController extends Controller
             SUM(CASE WHEN status IN ("solve", "selesai") THEN 1 ELSE 0 END) as solve_count,
             SUM(CASE WHEN status = "reject" THEN 1 ELSE 0 END) as reject_count,
             SUM(CASE WHEN status NOT IN ("reject", "dibatalkan") THEN jumlah_donasi ELSE 0 END) as total_donasi,
-            SUM(CASE WHEN status NOT IN ("reject", "dibatalkan") AND nama_donatur IS NOT NULL AND nama_donatur != "" THEN 1 ELSE 0 END) as total_donatur
+            SUM(CASE WHEN status NOT IN ("reject", "dibatalkan") AND donatur_id IS NOT NULL THEN 1 ELSE 0 END) as total_donatur
         ')->first();
 
         $totalTickets = (int) ($statusAggregates->total_tickets ?? 0);
@@ -136,26 +136,26 @@ class DashboardController extends Controller
 
         // ── Top 10 Donatur ──
         $topDonaturQuery = DB::table('tickets')
+            ->join('donaturs', 'tickets.donatur_id', '=', 'donaturs.id')
             ->select(
-                'nama_donatur',
-                DB::raw('COUNT(*) as total_transaksi'),
-                DB::raw('SUM(jumlah_donasi) as total_donasi')
+                'donaturs.nama_lengkap as nama_donatur',
+                DB::raw('COUNT(tickets.id) as total_transaksi'),
+                DB::raw('SUM(tickets.jumlah_donasi) as total_donasi')
             )
-            ->whereNotIn('status', ['reject', 'dibatalkan'])
-            ->whereNotNull('nama_donatur')
-            ->where('nama_donatur', '!=', '');
+            ->whereNotIn('tickets.status', ['reject', 'dibatalkan'])
+            ->whereNotNull('tickets.donatur_id');
 
-        if ($year) $topDonaturQuery->whereYear('created_at', $year);
-        if ($month) $topDonaturQuery->whereMonth('created_at', $month);
+        if ($year) $topDonaturQuery->whereYear('tickets.created_at', $year);
+        if ($month) $topDonaturQuery->whereMonth('tickets.created_at', $month);
         
-        $topDonatur = $topDonaturQuery->groupBy('nama_donatur')
+        $topDonatur = $topDonaturQuery->groupBy('donaturs.id', 'donaturs.nama_lengkap')
             ->orderByDesc('total_donasi')
             ->limit(10)
             ->get();
 
         // ── Riwayat Transaksi Terbaru ──
-        $riwayatTransaksiQuery = Record::with('user:id,username,name')
-            ->select('id', 'user_id', 'nama_donatur', 'jumlah_donasi', 'created_at', 'status', 'form_data')
+        $riwayatTransaksiQuery = Record::with(['user:id,username,name', 'donatur'])
+            ->select('id', 'user_id', 'donatur_id', 'jumlah_donasi', 'created_at', 'status', 'form_data')
             ->whereNotIn('status', ['reject', 'dibatalkan'])
             ->where('jumlah_donasi', '>', 0);
             
@@ -209,7 +209,7 @@ class DashboardController extends Controller
             'org_divisi.nama_divisi',
             'org_unit.nama_unit_organisasi',
             DB::raw('SUM(tickets.jumlah_donasi) as total_donasi'),
-            DB::raw('COUNT(DISTINCT tickets.nama_donatur) as total_donatur')
+            DB::raw('COUNT(tickets.id) as total_transaksi')
         )
         ->leftJoin('users', 'tickets.user_id', '=', 'users.id')
         ->leftJoin('org_divisi', 'users.divisi_id', '=', 'org_divisi.id')
@@ -231,7 +231,7 @@ class DashboardController extends Controller
                 'org_unit_id' => $item->org_unit_id,
                 'nama_cabang' => $namaCabang,
                 'total_donasi' => (float) $item->total_donasi,
-                'total_donatur' => (int) $item->total_donatur,
+                'total_transaksi' => (int) $item->total_transaksi,
             ];
         })->sortByDesc('total_donasi')->values();
 
@@ -277,11 +277,16 @@ class DashboardController extends Controller
         $month = $request->input('month', date('n'));
         $year = $request->input('year', date('Y'));
 
-        $query = Record::select('tickets.nama_donatur', DB::raw('SUM(tickets.jumlah_donasi) as total_donasi'), DB::raw('COUNT(*) as total_transaksi'))
+        $query = Record::select(
+                'tickets.id',
+                'tickets.jumlah_donasi',
+                'tickets.form_data',
+                'donaturs.nama_lengkap as nama_donatur_rel'
+            )
             ->leftJoin('users', 'tickets.user_id', '=', 'users.id')
+            ->leftJoin('donaturs', 'tickets.donatur_id', '=', 'donaturs.id')
             ->whereNotIn('tickets.status', ['reject', 'dibatalkan'])
-            ->whereNotNull('tickets.nama_donatur')
-            ->where('tickets.nama_donatur', '!=', '');
+            ->where('tickets.jumlah_donasi', '>', 0);
 
         if ($divisiId === 'null' || $divisiId === null) {
             $query->whereNull('users.divisi_id');
@@ -298,16 +303,53 @@ class DashboardController extends Controller
         if ($year) $query->whereYear('tickets.created_at', $year);
         if ($month) $query->whereMonth('tickets.created_at', $month);
 
-        $donaturList = $query->groupBy('tickets.nama_donatur')
-            ->orderByDesc('total_donasi')
-            ->get()
-            ->map(function ($item) {
-                return [
-                    'nama_donatur' => $item->nama_donatur,
-                    'total_donasi' => (float) $item->total_donasi,
-                    'total_transaksi' => (int) $item->total_transaksi,
+        $records = $query->get();
+
+        // Cari ID field yang berhubungan dengan donatur untuk fallback data lama
+        $donaturFieldIds = \App\Models\FormField::where('tipe_field', 'donatur_lookup')
+            ->orWhere('label', 'like', '%donatur%')
+            ->orWhere('label', 'like', '%nama%')
+            ->pluck('id')
+            ->map(fn($id) => (string)$id)
+            ->toArray();
+
+        $grouped = [];
+
+        foreach ($records as $record) {
+            $namaDonatur = $record->nama_donatur_rel;
+
+            if (empty($namaDonatur)) {
+                $formData = is_string($record->form_data) ? json_decode($record->form_data, true) : $record->form_data;
+                $foundName = null;
+                
+                if (is_array($formData)) {
+                    foreach ($donaturFieldIds as $fieldId) {
+                        if (!empty($formData[$fieldId])) {
+                            // Pastikan bukan ID angka (karena jika angka, itu referensi ke donaturs yang mungkin terhapus)
+                            if (!is_numeric($formData[$fieldId])) {
+                                $foundName = $formData[$fieldId];
+                                break;
+                            }
+                        }
+                    }
+                }
+                
+                $namaDonatur = $foundName ?: 'Hamba Allah';
+            }
+
+            if (!isset($grouped[$namaDonatur])) {
+                $grouped[$namaDonatur] = [
+                    'nama_donatur' => $namaDonatur,
+                    'total_donasi' => 0,
+                    'total_transaksi' => 0,
                 ];
-            });
+            }
+
+            $grouped[$namaDonatur]['total_donasi'] += (float) $record->jumlah_donasi;
+            $grouped[$namaDonatur]['total_transaksi'] += 1;
+        }
+
+        $donaturList = collect(array_values($grouped))->sortByDesc('total_donasi')->values()->all();
 
         return response()->json($donaturList);
     }

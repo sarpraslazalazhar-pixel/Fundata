@@ -73,7 +73,7 @@ class LaporanDataController extends Controller
             SUM(CASE WHEN status = "reject" THEN 1 ELSE 0 END) as reject_count,
             SUM(CASE WHEN status = "dibatalkan" THEN 1 ELSE 0 END) as dibatalkan_count,
             SUM(CASE WHEN status NOT IN ("reject", "dibatalkan") THEN jumlah_donasi ELSE 0 END) as total_donasi,
-            SUM(CASE WHEN status NOT IN ("reject", "dibatalkan") AND nama_donatur IS NOT NULL AND nama_donatur != "" THEN 1 ELSE 0 END) as total_donatur
+            SUM(CASE WHEN status NOT IN ("reject", "dibatalkan") AND donatur_id IS NOT NULL THEN 1 ELSE 0 END) as total_donatur
         ')->first();
 
         $totalTickets = (int) ($statusAggregates->total_tickets ?? 0);
@@ -142,18 +142,18 @@ class LaporanDataController extends Controller
             ->get();
 
         // 6. Paginated Tickets Data
-        $records = (clone $baseQuery)->with(['user.divisi', 'subUnit.unit'])
+        $records = (clone $baseQuery)->with(['user.divisi', 'subUnit.unit', 'donatur'])
             ->latest('tickets.created_at')
             ->paginate(15, ['*'], 'page')
             ->withQueryString();
 
         // 7. Paginated Donatur Data
         $donaturList = (clone $baseQuery)
-            ->selectRaw('nama_donatur, count(*) as total_transaksi, sum(jumlah_donasi) as total_rupiah')
-            ->whereNotNull('nama_donatur')
-            ->where('nama_donatur', '!=', '')
-            ->whereNotIn('status', ['reject', 'dibatalkan'])
-            ->groupBy('nama_donatur')
+            ->join('donaturs', 'tickets.donatur_id', '=', 'donaturs.id')
+            ->selectRaw('donaturs.nama_lengkap as nama_donatur, count(tickets.id) as total_transaksi, sum(tickets.jumlah_donasi) as total_rupiah')
+            ->whereNotNull('tickets.donatur_id')
+            ->whereNotIn('tickets.status', ['reject', 'dibatalkan'])
+            ->groupBy('donaturs.id', 'donaturs.nama_lengkap')
             ->orderByDesc('total_rupiah')
             ->paginate(15, ['*'], 'donatur_page')
             ->withQueryString();
@@ -197,7 +197,7 @@ class LaporanDataController extends Controller
         $status = $request->input('status');
         $divisiId = $request->input('divisi_id');
 
-        $baseQuery = Record::query()->with(['user.divisi', 'subUnit.unit']);
+        $baseQuery = Record::query()->with(['user.divisi', 'subUnit.unit', 'donatur']);
 
         if ($dateFrom && $dateTo) {
             $baseQuery->whereBetween('tickets.created_at', [$dateFrom . ' 00:00:00', $dateTo . ' 23:59:59']);
@@ -268,7 +268,7 @@ class LaporanDataController extends Controller
                     $record->created_at->format('Y-m-d H:i:s'),
                     $record->user->divisi->nama_divisi ?? '-',
                     $record->user->name ?? $record->user->username ?? '-',
-                    $record->nama_donatur ?? '-',
+                    $record->donatur->nama_lengkap ?? '-',
                     $record->jumlah_donasi ?? 0,
                     $record->subUnit->nama_layanan ?? '-',
                     $record->status,

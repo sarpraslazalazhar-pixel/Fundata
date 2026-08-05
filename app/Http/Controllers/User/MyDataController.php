@@ -17,7 +17,7 @@ class MyDataController extends Controller
     public function index(Request $request)
     {
         $query = Record::where('user_id', auth()->id())
-            ->with(['unit', 'subUnit', 'campaign']);
+            ->with(['unit', 'subUnit', 'campaign', 'donatur']);
 
         // Filter status
         if ($request->has('status') && $request->status) {
@@ -91,6 +91,7 @@ class MyDataController extends Controller
             'unit',
             'subUnit',
             'campaign',
+            'donatur',
             'orgDivisi',
             'orgUnit',
             'jabatan',

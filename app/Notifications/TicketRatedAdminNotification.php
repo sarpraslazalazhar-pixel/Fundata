@@ -30,9 +30,12 @@ class TicketRatedAdminNotification extends Notification
 
     public function toWebPush($notifiable, $notification)
     {
+        $faviconPath = \App\Models\SystemConfig::getValue('favicon_path');
+        $iconUrl = $faviconPath ? url('/storage/' . $faviconPath) : url('/favicon.ico');
+
         return (new WebPushMessage)
             ->title('Rating Baru: Tiket #' . $this->ticket->id)
-            ->icon('/images/logo.png')
+            ->icon($iconUrl)
             ->body("Tiket diberi rating " . $this->rating . " bintang. " . \Illuminate\Support\Str::limit($this->komentar, 50))
             ->action('Lihat Tiket', url('/admin/tiket/' . $this->ticket->id))
             ->data(['url' => url('/admin/tiket/' . $this->ticket->id)]);

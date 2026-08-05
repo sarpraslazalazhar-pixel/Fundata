@@ -8,6 +8,11 @@ interface DynamicFieldProps {
   values: Record<string, any>;
   onChange: (fieldId: number, value: any) => void;
   errors?: Record<string, string>;
+  paymentMethods?: any[];
+  akads?: any[];
+  campaigns?: any[];
+  campaignId?: string;
+  onCampaignChange?: (val: string) => void;
 }
 
 const containerVariants = {
@@ -43,11 +48,16 @@ const itemVariants = {
   },
 };
 
-export default function DynamicField({ fields, values, onChange, errors }: DynamicFieldProps) {
+export default function DynamicField({ fields, values, onChange, errors, paymentMethods, akads, campaigns, campaignId, onCampaignChange }: DynamicFieldProps) {
   const visibleFields = fields.filter(field => {
     if (!field.parent_field_id) return true;
     const parentValue = values[field.parent_field_id];
-    return parentValue === field.trigger_value;
+    
+    if (field.trigger_value === '*') {
+      return parentValue !== undefined && parentValue !== null && parentValue !== '';
+    }
+    
+    return parentValue == field.trigger_value;
   });
 
   return (
@@ -72,6 +82,11 @@ export default function DynamicField({ fields, values, onChange, errors }: Dynam
               value={values[field.id]}
               onChange={onChange}
               errors={errors}
+              paymentMethods={paymentMethods}
+              akads={akads}
+              campaigns={campaigns}
+              campaignId={campaignId}
+              onCampaignChange={onCampaignChange}
             />
           </motion.div>
         ))}

@@ -67,9 +67,12 @@ class TicketCreatedAdminNotification extends Notification implements ShouldBroad
     {
         $layanan = $this->ticket->subUnit->nama_layanan ?? '-';
         $pembuat = $this->ticket->user->name ?: $this->ticket->user->username;
+        $faviconPath = \App\Models\SystemConfig::getValue('favicon_path');
+        $iconUrl = $faviconPath ? url('/storage/' . $faviconPath) : url('/favicon.ico');
+
         return (new \NotificationChannels\WebPush\WebPushMessage)
             ->title('Tiket Baru Masuk')
-            ->icon('/images/logo.png')
+            ->icon($iconUrl)
             ->body("Ada tiket baru dari {$pembuat} terkait layanan {$layanan}.")
             ->action('Lihat Tiket', url('/admin/tiket/' . $this->ticket->id))
             ->data(['url' => url('/admin/tiket/' . $this->ticket->id)]);

@@ -152,7 +152,7 @@ export default function DashboardIndex({ totalTickets, statusCounts, followUpTic
  <thead className="sticky top-0 bg-slate-50/95 backdrop-blur-sm z-10">
  <tr>
  <th className="py-3 px-4 font-semibold text-slate-600">Cabang / Sub Divisi</th>
- <th className="py-3 px-4 font-semibold text-slate-600 text-center">Jumlah Donatur</th>
+ <th className="py-3 px-4 font-semibold text-slate-600 text-center">Jumlah Transaksi</th>
  <th className="py-3 px-4 font-semibold text-right text-slate-600">Total Donasi (Rp)</th>
  <th className="py-3 px-4 font-semibold text-center text-slate-600 w-[100px]">Aksi</th>
  </tr>
@@ -161,7 +161,7 @@ export default function DashboardIndex({ totalTickets, statusCounts, followUpTic
  {donasiPerCabang?.map((cabang: any, idx: number) => (
  <tr key={idx} className="hover:bg-slate-50/50 transition-colors">
  <td className="py-3 px-4 font-medium">{cabang.nama_cabang}</td>
- <td className="py-3 px-4 text-center">{cabang.total_donatur}</td>
+ <td className="py-3 px-4 text-center">{cabang.total_transaksi}</td>
  <td className="py-3 px-4 text-right font-semibold text-emerald-600">
  {new Intl.NumberFormat('id-ID').format(cabang.total_donasi)}
  </td>
@@ -472,7 +472,7 @@ export default function DashboardIndex({ totalTickets, statusCounts, followUpTic
  <TableCell>
  <div className="font-medium text-slate-800">{trx.user?.name}</div>
  </TableCell>
- <TableCell className="font-medium">{trx.nama_donatur || '-'}</TableCell>
+ <TableCell className="font-medium">{trx.donatur?.nama_lengkap || '-'}</TableCell>
  <TableCell>
  <StatusBadge status={trx.status} />
  </TableCell>
@@ -527,8 +527,8 @@ export default function DashboardIndex({ totalTickets, statusCounts, followUpTic
  <p className="font-bold text-emerald-600 text-lg">Rp {new Intl.NumberFormat('id-ID').format(selectedDonasiCabang?.total_donasi || 0)}</p>
  </div>
  <div className="p-3 bg-slate-50 border rounded-md flex-1">
- <p className="text-slate-500 mb-1">Total Donatur</p>
- <p className="font-bold text-slate-800 text-lg">{selectedDonasiCabang?.total_donatur || 0} Orang</p>
+ <p className="text-slate-500 mb-1">Total Transaksi</p>
+ <p className="font-bold text-slate-800 text-lg">{selectedDonasiCabang?.total_transaksi || 0} Transaksi</p>
  </div>
  </div>
 

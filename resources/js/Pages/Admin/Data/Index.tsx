@@ -24,7 +24,7 @@ interface Ticket {
  unit?: { nama_unit: string };
  sub_unit?: { nama_layanan: string };
  assigned_admin?: { id: number; name: string; username: string };
- nama_donatur?: string;
+ donatur?: any;
  jumlah_donasi?: number;
  status: string;
  created_at: string;
@@ -107,7 +107,7 @@ export default function DataIndex({ records, filters, units, divisiList, orgUnit
  <p className="font-medium">{t.assigned_admin?.name || t.assigned_admin?.username || '-'}</p>
  ),
  },
- { key: 'donatur', header: 'Nama Donatur', render: (t: Ticket) => t.nama_donatur || '-' },
+ { key: 'donatur', header: 'Nama Donatur', render: (t: Ticket) => t.donatur?.nama_lengkap || '-' },
  { key: 'donasi', header: 'Donasi (Rp)', render: (t: Ticket) => t.jumlah_donasi ? new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(Number(t.jumlah_donasi)) : '-' },
  { key: 'status', header: 'Status', render: (t: Ticket) => <StatusBadge status={t.status} /> },
  {

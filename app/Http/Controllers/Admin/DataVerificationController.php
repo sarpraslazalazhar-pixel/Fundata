@@ -20,7 +20,7 @@ class DataVerificationController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Record::with(['user.divisi', 'unit', 'subUnit', 'campaign', 'assignedAdmin']);
+        $query = Record::with(['user.divisi', 'unit', 'subUnit', 'campaign', 'assignedAdmin', 'donatur']);
 
         $admin = auth('admin')->user();
         if (!$admin->hasRole('Super Admin')) {
@@ -88,7 +88,7 @@ class DataVerificationController extends Controller
 
         $record->load([
             'user', 'user.divisi', 'user.orgUnit', 'user.jabatan',
-            'unit', 'subUnit', 'campaign', 'orgDivisi', 'orgUnit', 'jabatan',
+            'unit', 'subUnit', 'campaign', 'orgDivisi', 'orgUnit', 'jabatan', 'donatur',
             'attachments.field',
             'logs' => fn($q) => $q->latest('timestamp'),
             'logs.admin',

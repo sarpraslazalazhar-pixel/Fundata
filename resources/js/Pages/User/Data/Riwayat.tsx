@@ -22,7 +22,7 @@ const columns = [
  { key: 'id', header: 'No. Data', render: (t: any) =>`#DT-${formatTicketId(t.id)}`},
  { key: 'unit', header: 'Unit', render: (t: any) => t.unit?.nama_unit || '-' },
  { key: 'sub_unit', header: 'Layanan', render: (t: any) => t.sub_unit?.nama_layanan || '-' },
- { key: 'donatur', header: 'Nama Donatur', render: (t: any) => t.nama_donatur || '-' },
+ { key: 'donatur', header: 'Nama Donatur', render: (t: any) => t.donatur?.nama_lengkap || '-' },
  { key: 'donasi', header: 'Donasi (Rp)', render: (t: any) => t.jumlah_donasi ? new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(Number(t.jumlah_donasi)) : '-' },
  { key: 'status', header: 'Status', render: (t: any) => <StatusBadge status={t.status} /> },
  { key: 'created_at', header: 'Tanggal', render: (t: any) => new Date(t.created_at).toLocaleDateString() },

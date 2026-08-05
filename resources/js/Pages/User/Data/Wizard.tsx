@@ -37,7 +37,7 @@ const stepVariants = {
   }),
 };
 
-export default function DataWizard({ unitList, campaigns = [] }: { unitList: any[], campaigns?: any[] }) {
+export default function DataWizard({ unitList, campaigns = [], paymentMethods = [], akads = [] }: { unitList: any[], campaigns?: any[], paymentMethods?: any[], akads?: any[] }) {
   const [activeStep, setActiveStep] = useState(0);
   const [direction, setDirection] = useState(1);
   const [formFields, setFormFields] = useState<FormFieldType[]>([]);
@@ -49,7 +49,7 @@ export default function DataWizard({ unitList, campaigns = [] }: { unitList: any
     sub_unit_id: '',
     campaign_id: '',
     form_data: {} as Record<string, any>,
-    nama_donatur: '',
+    donatur_id: '',
     jumlah_donasi: '',
     attachments: {} as Record<string, File[]>,
     general_attachments: [] as File[],
@@ -70,7 +70,7 @@ export default function DataWizard({ unitList, campaigns = [] }: { unitList: any
         .then(res => {
           setFormFields(res.data);
           setData('form_data', {});
-          setData('nama_donatur', '');
+          setData('donatur_id', '');
           setData('jumlah_donasi', '');
           setData('attachments', {});
         })
@@ -153,7 +153,10 @@ export default function DataWizard({ unitList, campaigns = [] }: { unitList: any
       if (!data.sub_unit_id) { setError('sub_unit_id', 'Jenis Data wajib dipilih'); isValid = false; }
     } else if (step === 1) {
       nonUploadFields.forEach(field => {
-        const isVisible = !field.parent_field_id || data.form_data[field.parent_field_id] === field.trigger_value;
+        const isVisible = !field.parent_field_id || 
+          (field.trigger_value === '*' 
+            ? (data.form_data[field.parent_field_id] !== undefined && data.form_data[field.parent_field_id] !== null && data.form_data[field.parent_field_id] !== '')
+            : data.form_data[field.parent_field_id] == field.trigger_value);
         if (isVisible && field.wajib && field.tipe_field !== 'info_peraturan') {
           const val = data.form_data[field.id];
           if (val === undefined || val === null || val === '' || (Array.isArray(val) && val.length === 0)) {
@@ -164,7 +167,10 @@ export default function DataWizard({ unitList, campaigns = [] }: { unitList: any
       });
     } else if (step === 2) {
       uploadFields.forEach(field => {
-        const isVisible = !field.parent_field_id || data.form_data[field.parent_field_id] === field.trigger_value;
+        const isVisible = !field.parent_field_id || 
+          (field.trigger_value === '*' 
+            ? (data.form_data[field.parent_field_id] !== undefined && data.form_data[field.parent_field_id] !== null && data.form_data[field.parent_field_id] !== '')
+            : data.form_data[field.parent_field_id] == field.trigger_value);
         if (isVisible && field.wajib) {
           const files = data.attachments[String(field.id)];
           if (!files || files.length === 0) {
@@ -335,23 +341,7 @@ export default function DataWizard({ unitList, campaigns = [] }: { unitList: any
                         )}
                         {errors.sub_unit_id && <p className="text-red-500 text-sm mt-1">{errors.sub_unit_id}</p>}
                       </div>
-                      {campaigns.length > 0 && (
-                        <div className="mt-6 pt-6 border-t border-slate-200">
-                          <Label className="mb-3 block text-base font-semibold">Campaign / Program (Opsional)</Label>
-                          <p className="text-sm text-slate-500 mb-3">Pilih jika donasi ini ditujukan untuk campaign atau program spesifik.</p>
-                          <select
-                            className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
-                            value={data.campaign_id}
-                            onChange={e => setData('campaign_id', e.target.value)}
-                          >
-                            <option value="">-- Tidak Memilih Program --</option>
-                            {campaigns.map((c: any) => (
-                              <option key={c.id} value={c.id}>{c.nama_campaign}</option>
-                            ))}
-                          </select>
-                          {errors.campaign_id && <p className="text-red-500 text-sm mt-1">{errors.campaign_id}</p>}
-                        </div>
-                      )}
+                      {/* Campaign ditutup sementara karena akan di-trigger dari pilihan Akad nanti */}
                     </div>
                   )}
 
@@ -369,6 +359,11 @@ export default function DataWizard({ unitList, campaigns = [] }: { unitList: any
                           values={data.form_data}
                           onChange={handleFieldChange}
                           errors={errors}
+                          paymentMethods={paymentMethods}
+                          akads={akads}
+                          campaigns={campaigns}
+                          campaignId={data.campaign_id}
+                          onCampaignChange={(val: string) => setData('campaign_id', val)}
                         />
                       )}
                     </div>
@@ -383,7 +378,11 @@ export default function DataWizard({ unitList, campaigns = [] }: { unitList: any
                       ) : (
                         <div className="space-y-6">
                           {uploadFields
-                            .filter(field => !field.parent_field_id || data.form_data[field.parent_field_id] === field.trigger_value)
+                            .filter(field => {
+                              if (!field.parent_field_id) return true;
+                              if (field.trigger_value === '*') return !!data.form_data[field.parent_field_id];
+                              return data.form_data[field.parent_field_id] == field.trigger_value;
+                            })
                             .map(field => (
                               <div key={field.id}>
                                 <div className="flex items-center gap-2">
@@ -415,7 +414,11 @@ export default function DataWizard({ unitList, campaigns = [] }: { unitList: any
                       {nonUploadFields.length > 0 && (
                         <ReviewSection title="Formulir Pendataan" icon={<CheckCircle2 className="w-4 h-4 text-green-500" />}>
                           {nonUploadFields
-                            .filter(field => !field.parent_field_id || data.form_data[field.parent_field_id] === field.trigger_value)
+                            .filter(field => {
+                              if (!field.parent_field_id) return true;
+                              if (field.trigger_value === '*') return !!data.form_data[field.parent_field_id];
+                              return data.form_data[field.parent_field_id] == field.trigger_value;
+                            })
                             .map(field => {
                               const value = data.form_data[field.id];
                               const displayValue = field.tipe_field === 'mata_uang' && value
@@ -429,7 +432,11 @@ export default function DataWizard({ unitList, campaigns = [] }: { unitList: any
                       {(uploadFields.length > 0) && (
                         <ReviewSection title="Lampiran" icon={<CheckCircle2 className="w-4 h-4 text-green-500" />}>
                           {uploadFields
-                            .filter(field => !field.parent_field_id || data.form_data[field.parent_field_id] === field.trigger_value)
+                            .filter(field => {
+                              if (!field.parent_field_id) return true;
+                              if (field.trigger_value === '*') return !!data.form_data[field.parent_field_id];
+                              return data.form_data[field.parent_field_id] == field.trigger_value;
+                            })
                             .map(field => {
                               const files = data.attachments[String(field.id)] || [];
                               return (

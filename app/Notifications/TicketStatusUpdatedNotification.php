@@ -32,9 +32,12 @@ class TicketStatusUpdatedNotification extends Notification
     public function toWebPush($notifiable, $notification)
     {
         $statusStr = ucwords(str_replace('_', ' ', $this->ticket->status));
+        $faviconPath = \App\Models\SystemConfig::getValue('favicon_path');
+        $iconUrl = $faviconPath ? url('/storage/' . $faviconPath) : url('/favicon.ico');
+
         return (new \NotificationChannels\WebPush\WebPushMessage)
             ->title('Status Tiket Diubah')
-            ->icon('/images/logo.png')
+            ->icon($iconUrl)
             ->body('Status tiket Anda berubah menjadi ' . $statusStr . '. Catatan: ' . \Illuminate\Support\Str::limit($this->catatan, 50))
             ->action('Lihat Tiket', route('tiket.show', $this->ticket->id))
             ->data(['url' => route('tiket.show', $this->ticket->id)]);

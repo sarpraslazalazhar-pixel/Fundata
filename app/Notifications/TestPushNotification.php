@@ -15,9 +15,12 @@ class TestPushNotification extends Notification
 
     public function toWebPush($notifiable, $notification)
     {
+        $faviconPath = \App\Models\SystemConfig::getValue('favicon_path');
+        $iconUrl = $faviconPath ? url('/storage/' . $faviconPath) : url('/favicon.ico');
+
         return (new WebPushMessage)
             ->title('Test Notifikasi Berhasil! 🎉')
-            ->icon('/favicon.ico')
+            ->icon($iconUrl)
             ->body('Halo! Jika Anda melihat popup ini, berarti integrasi sistem Push Notification berjalan dengan sempurna.')
             ->action('Tutup', url('/'));
     }

@@ -25,7 +25,7 @@ class Record extends Model
     }
     protected $fillable = [
         'user_id', 'divisi_id', 'org_unit_id', 'jabatan_id',
-        'unit_id', 'sub_unit_id', 'campaign_id', 'form_data', 'nama_donatur', 'jumlah_donasi', 'status', 'priority', 'assigned_admin_id',
+        'unit_id', 'sub_unit_id', 'campaign_id', 'form_data', 'donatur_id', 'jumlah_donasi', 'status', 'priority', 'assigned_admin_id',
         'revision_count', 'waiting_approval_at', 'is_result_accepted'
     ];
 
@@ -65,6 +65,11 @@ class Record extends Model
     public function campaign()
     {
         return $this->belongsTo(Campaign::class, 'campaign_id');
+    }
+
+    public function donatur()
+    {
+        return $this->belongsTo(Donatur::class, 'donatur_id');
     }
 
     public function user()

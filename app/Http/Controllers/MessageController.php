@@ -24,26 +24,36 @@ class MessageController extends Controller
         return Inertia::render('Admin/Messages/Index');
     }
 
-    private function getCurrentUser()
+    private function getCurrentType(Request $request = null)
     {
-        if (Auth::guard('admin')->check()) {
-            return Auth::guard('admin')->user();
-        }
-        return Auth::guard('web')->user();
-    }
+        $requestedType = $request ? ($request->query('sender_type') ?? $request->input('sender_type')) : null;
 
-    private function getCurrentType()
-    {
+        if ($requestedType === 'user' && Auth::guard('web')->check()) {
+            return User::class;
+        }
+        if ($requestedType === 'admin' && Auth::guard('admin')->check()) {
+            return Admin::class;
+        }
+
         if (Auth::guard('admin')->check()) {
             return Admin::class;
         }
         return User::class;
     }
 
-    public function contacts()
+    private function getCurrentUser(Request $request = null)
     {
-        $currentUser = $this->getCurrentUser();
-        $currentType = $this->getCurrentType();
+        $type = $this->getCurrentType($request);
+        if ($type === Admin::class) {
+            return Auth::guard('admin')->user();
+        }
+        return Auth::guard('web')->user();
+    }
+
+    public function contacts(Request $request)
+    {
+        $currentUser = $this->getCurrentUser($request);
+        $currentType = $this->getCurrentType($request);
 
         // Get Users
         $users = User::when($currentType === User::class, function($q) use ($currentUser) {
@@ -74,8 +84,8 @@ class MessageController extends Controller
             return response()->json([]);
         }
 
-        $senderType = $this->getCurrentType();
-        $senderId = $this->getCurrentUser()->id;
+        $senderType = $this->getCurrentType($request);
+        $senderId = $this->getCurrentUser($request)->id;
 
         $conversation = Conversation::where(function ($query) use ($senderId, $senderType, $receiverId, $receiverType) {
             $query->where('participant_one_type', $senderType)
@@ -109,8 +119,8 @@ class MessageController extends Controller
             'attachment_name' => 'nullable|string',
         ]);
 
-        $senderType = $this->getCurrentType();
-        $senderId = $this->getCurrentUser()->id;
+        $senderType = $this->getCurrentType($request);
+        $senderId = $this->getCurrentUser($request)->id;
         $receiverType = $request->receiver_type;
         $receiverId = $request->receiver_id;
 
@@ -189,7 +199,7 @@ class MessageController extends Controller
         // Web push notification
         $receiverModel = $receiverType === User::class ? User::find($receiverId) : Admin::find($receiverId);
         if ($receiverModel) {
-            $senderName = $this->getCurrentUser()->name ?? 'Pengguna';
+            $senderName = $this->getCurrentUser($request)->name ?? 'Pengguna';
             $receiverModel->notify(new \App\Notifications\NewMessageNotification($message, $senderName));
         }
 
@@ -198,8 +208,8 @@ class MessageController extends Controller
 
     public function contextOptions(Request $request)
     {
-        $currentUser = $this->getCurrentUser();
-        $currentType = $this->getCurrentType();
+        $currentUser = $this->getCurrentUser($request);
+        $currentType = $this->getCurrentType($request);
 
         $query = Record::with('subUnit')->orderBy('created_at', 'desc')->limit(50);
 

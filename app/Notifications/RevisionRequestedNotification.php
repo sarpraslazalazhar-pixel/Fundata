@@ -45,9 +45,12 @@ class RevisionRequestedNotification extends Notification
     public function toWebPush($notifiable, $notification)
     {
         $layanan = $this->ticket->subUnit->nama_layanan ?? '-';
+        $faviconPath = \App\Models\SystemConfig::getValue('favicon_path');
+        $iconUrl = $faviconPath ? url('/storage/' . $faviconPath) : url('/favicon.ico');
+
         return (new \NotificationChannels\WebPush\WebPushMessage)
             ->title('Permintaan Revisi Tiket')
-            ->icon('/images/logo.png')
+            ->icon($iconUrl)
             ->body("Tiket {$this->ticket->formatted_id} ({$layanan}) perlu direvisi. Catatan: " . \Illuminate\Support\Str::limit($this->catatan, 50))
             ->action('Lihat Tiket', url('/admin/tiket/' . $this->ticket->id))
             ->data(['url' => url('/admin/tiket/' . $this->ticket->id)]);

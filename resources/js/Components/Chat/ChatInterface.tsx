@@ -5,12 +5,12 @@ import { format } from 'date-fns';
 import { Send, Search, Users, ChevronLeft, Paperclip, FileText, Download, X, Loader2, Link2 } from 'lucide-react';
 import { Button } from '@/Components/ui/button';
 
-export default function ChatInterface() {
+export default function ChatInterface({ guard }: { guard?: 'user' | 'admin' }) {
     const { auth } = usePage<any>().props;
-    const user = auth?.user || auth?.admin;
-    const userModelType = user?.hasOwnProperty('username') && !user?.hasOwnProperty('divisi_id') 
-        ? 'App\\Models\\Admin' 
-        : 'App\\Models\\User';
+    const isExplicitAdmin = guard === 'admin';
+    const user = isExplicitAdmin ? auth?.admin : auth?.user;
+    const userModelType = isExplicitAdmin ? 'App\\Models\\Admin' : 'App\\Models\\User';
+
     
     const [contacts, setContacts] = useState<any[]>([]);
     const [activeChat, setActiveChat] = useState<any | null>(null);
@@ -79,7 +79,7 @@ export default function ChatInterface() {
     const fetchContacts = async () => {
         setLoading(true);
         try {
-            const res = await axios.get('/api/messages/contacts');
+            const res = await axios.get(`/api/messages/contacts?sender_type=${userModelType === 'App\\Models\\Admin' ? 'admin' : 'user'}`);
             setContacts(res.data);
         } catch (error) {
             console.error(error);
@@ -90,7 +90,7 @@ export default function ChatInterface() {
     const fetchMessages = async (chat: any) => {
         setLoading(true);
         try {
-            const res = await axios.get(`/api/messages/${chat.id}?receiver_type=${encodeURIComponent(chat.model_type)}`);
+            const res = await axios.get(`/api/messages/${chat.id}?receiver_type=${encodeURIComponent(chat.model_type)}&sender_type=${userModelType === 'App\\Models\\Admin' ? 'admin' : 'user'}`);
             setMessages(res.data);
         } catch (error) {
             console.error(error);
@@ -103,7 +103,7 @@ export default function ChatInterface() {
         if (contextOptions.length === 0) {
             setLoadingContext(true);
             try {
-                const res = await axios.get('/api/messages/context-options');
+                const res = await axios.get(`/api/messages/context-options?sender_type=${userModelType === 'App\\Models\\Admin' ? 'admin' : 'user'}`);
                 setContextOptions(res.data);
             } catch (error) {
                 console.error(error);
@@ -159,6 +159,7 @@ export default function ChatInterface() {
                 body: text,
                 context_type: currentContext?.model_type || null,
                 context_id: currentContext?.id || null,
+                sender_type: userModelType === 'App\\Models\\Admin' ? 'admin' : 'user',
                 attachment_base64: base64Attachment,
                 attachment_name: currentAttachment?.name,
             };

@@ -148,11 +148,11 @@ export default function TicketDetail({ ticket, formFields, operators }: any) {
  </CardContent>
  </Card>
 
- {(ticket.nama_donatur || ticket.jumlah_donasi) && (
+ {(ticket.donatur || ticket.jumlah_donasi) && (
   <Card>
   <CardHeader><CardTitle>Informasi Donatur</CardTitle></CardHeader>
   <CardContent className="grid grid-cols-2 gap-4">
-  <div><span className="text-sm text-slate-500">Nama Donatur</span><p className="font-medium">{ticket.nama_donatur || '-'}</p></div>
+  <div><span className="text-sm text-slate-500">Nama Donatur</span><p className="font-medium">{ticket.donatur?.nama_lengkap || '-'}</p></div>
   <div><span className="text-sm text-slate-500">Jumlah Donasi</span><p className="font-medium">
   {ticket.jumlah_donasi 
   ? new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(Number(ticket.jumlah_donasi))

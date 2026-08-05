@@ -89,6 +89,9 @@ const adminNavItems: NavItem[] = [
   { type: 'link', label: 'Verifikator', icon: Shield, route: '/admin/manajemen-operator', permissionGroup: 'akses-manajemen-akun' },
   { type: 'link', label: 'Pengguna', icon: Users, route: '/admin/manajemen-user', permissionGroup: 'akses-manajemen-akun' },
 
+  { type: 'header', label: 'DONASI & DONATUR' },
+  { type: 'link', label: 'Data Donatur', icon: Users, route: '/admin/donatur' },
+
   { type: 'header', label: 'MASTER DATA' },
   {
     type: 'dropdown',
@@ -98,7 +101,9 @@ const adminNavItems: NavItem[] = [
     children: [
       { label: 'Kategori', icon: Database, route: '/admin/master/unit', permissionGroup: 'akses-layanan' },
       { label: 'Jenis Data', icon: Database, route: '/admin/master/sub-unit', permissionGroup: 'akses-layanan' },
+      { label: 'Metode Pembayaran', icon: Database, route: '/admin/master/metode-pembayaran', permissionGroup: 'akses-layanan' },
       { label: 'Campaign/Program', icon: Database, route: '/admin/master/campaigns', permissionGroup: 'akses-layanan' },
+      { label: 'Akad', icon: Database, route: '/admin/master/akad', permissionGroup: 'akses-layanan' },
     ]
   },
   {

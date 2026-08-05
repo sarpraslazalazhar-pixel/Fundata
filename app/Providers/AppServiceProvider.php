@@ -16,6 +16,11 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        if (env('OPENSSL_CONF')) {
+            putenv('OPENSSL_CONF=' . env('OPENSSL_CONF'));
+        }
+        
+        // ... rest of boot
         if ($this->app->environment('production')) {
             \URL::forceScheme('https');
         }

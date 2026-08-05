@@ -5,7 +5,7 @@ import ChatInterface from '@/Components/Chat/ChatInterface';
 export default function Index() {
     return (
         <UserLayout title="Pesan">
-            <ChatInterface />
+            <ChatInterface guard="user" />
         </UserLayout>
     );
 }

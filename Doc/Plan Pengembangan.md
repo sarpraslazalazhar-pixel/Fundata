@@ -3,6 +3,6 @@
 - [ ] cari donatur tanggal donasi 
 - [ ] filter tanggal transaksi & waktu
 - [ ] filter metode pembayaran
-- [ ] Modul Database Donator
-- [ ] database metode bayar
+- [x] Modul Database Donator
+- [x] database metode bayar
 - [ ] database akad/layanan (ada infak, zakat, campaign, wakaf dan DSKL)

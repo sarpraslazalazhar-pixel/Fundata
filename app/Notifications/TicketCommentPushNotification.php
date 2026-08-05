@@ -55,9 +55,12 @@ class TicketCommentPushNotification extends Notification
      */
     public function toWebPush($notifiable, $notification)
     {
+        $faviconPath = \App\Models\SystemConfig::getValue('favicon_path');
+        $iconUrl = $faviconPath ? url('/storage/' . $faviconPath) : url('/favicon.ico');
+
         return (new WebPushMessage)
             ->title('Komentar Baru: Tiket #' . $this->ticket->id)
-            ->icon('/images/logo.png')
+            ->icon($iconUrl)
             ->body($this->senderName . ': ' . \Illuminate\Support\Str::limit($this->commentText, 100))
             ->action('Lihat Tiket', $this->url)
             ->data(['url' => $this->url]);

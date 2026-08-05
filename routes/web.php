@@ -86,6 +86,8 @@ Route::prefix('api')->group(function () {
     Route::get('/org-units/{divisiId}', [DropdownController::class, 'orgUnits'])->name('api.org-units');
     Route::get('/sub-units/{unitId}', [DropdownController::class, 'subUnits'])->name('api.sub-units');
     Route::get('/form-fields/{subUnitId}', [DropdownController::class, 'formFields'])->name('api.form-fields');
+    Route::get('/donatur/search', [\App\Http\Controllers\Api\DonaturController::class, 'search'])->name('api.donatur.search');
+    Route::post('/donatur/quick-store', [\App\Http\Controllers\Api\DonaturController::class, 'quickStore'])->name('api.donatur.quick-store');
 });
 
 // Web Push Subscriptions
@@ -148,7 +150,16 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::middleware('permission:akses-layanan')->group(function () {
             Route::resource('master/unit', \App\Http\Controllers\Admin\UnitController::class)->except(['create', 'edit', 'show'])->names('master.unit');
             Route::resource('master/sub-unit', \App\Http\Controllers\Admin\SubUnitController::class)->except(['create', 'edit', 'show'])->names('master.sub-unit');
+            Route::resource('master/metode-pembayaran', \App\Http\Controllers\Admin\PaymentMethodController::class)->except(['create', 'edit', 'show'])->names('master.metode-pembayaran');
             Route::resource('master/campaigns', \App\Http\Controllers\Admin\CampaignController::class)->except(['create', 'edit', 'show'])->names('master.campaigns');
+            Route::resource('master/akad', \App\Http\Controllers\Admin\AkadController::class)->except(['create', 'edit', 'show'])->names('master.akad');
+
+            Route::get('donatur/import/template', [\App\Http\Controllers\Admin\DonaturController::class, 'importTemplate'])->name('donatur.import.template');
+            Route::post('donatur/import/preview', [\App\Http\Controllers\Admin\DonaturController::class, 'importPreview'])->name('donatur.import.preview');
+            Route::post('donatur/import/confirm', [\App\Http\Controllers\Admin\DonaturController::class, 'importConfirm'])->name('donatur.import.confirm');
+            Route::get('donatur/{donatur}/history', [\App\Http\Controllers\Admin\DonaturController::class, 'history'])->name('donatur.history');
+            Route::patch('donatur/{donatur}/approve', [\App\Http\Controllers\Admin\DonaturController::class, 'approve'])->name('donatur.approve');
+            Route::resource('donatur', \App\Http\Controllers\Admin\DonaturController::class)->except(['create', 'edit', 'show'])->names('donatur');
         });
 
         // Master Data Struktur

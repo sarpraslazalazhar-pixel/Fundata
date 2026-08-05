@@ -27,6 +27,8 @@ class DataInputController extends Controller
         return Inertia::render('User/Data/Wizard', [
             'unitList' => Unit::where('aktif', true)->orderBy('nama_unit')->get(),
             'campaigns' => Campaign::where('is_active', true)->orderBy('nama_campaign')->get(),
+            'paymentMethods' => \App\Models\PaymentMethod::where('is_active', true)->get(),
+            'akads' => \App\Models\Akad::where('is_active', true)->with('children')->whereNull('parent_id')->get(),
         ]);
     }
 
@@ -45,7 +47,7 @@ class DataInputController extends Controller
             'sub_unit_id' => 'required|exists:sub_units,id',
             'campaign_id' => 'nullable|exists:campaigns,id',
             'form_data' => 'required|array',
-            'nama_donatur' => 'nullable|string|max:255',
+            'donatur_id' => 'nullable|exists:donaturs,id',
             'jumlah_donasi' => 'nullable|numeric|min:0',
             'attachments' => 'nullable|array',
             'attachments.*' => 'nullable|array|max:3',
@@ -56,7 +58,7 @@ class DataInputController extends Controller
 
         // Validasi form_data berdasarkan form_fields yang wajib (hanya yg visible)
         $formFields = FormField::where('sub_unit_id', $request->sub_unit_id)->get();
-        $extractedNamaDonatur = null;
+        $extractedDonaturId = null;
         $extractedJumlahDonasi = null;
 
         foreach ($formFields as $field) {
@@ -65,8 +67,8 @@ class DataInputController extends Controller
 
             // Extract dynamically
             if ($val) {
-                if (stripos($field->label, 'donatur') !== false || stripos($field->label, 'nama donatur') !== false) {
-                    $extractedNamaDonatur = $val;
+                if ($field->tipe_field === 'donatur_lookup') {
+                    $extractedDonaturId = $val;
                 }
                 if (stripos($field->label, 'donasi') !== false || stripos($field->label, 'jumlah donasi') !== false || stripos($field->label, 'nominal') !== false) {
                     // Hanya set ke jumlah_donasi jika tipe data numerik/nominal_rp, atau string angka
@@ -80,7 +82,11 @@ class DataInputController extends Controller
             // Skip hidden conditional fields
             if ($field->parent_field_id) {
                 $parentValue = $request->form_data[(string) $field->parent_field_id] ?? null;
-                if ($parentValue !== $field->trigger_value) continue;
+                if ($field->trigger_value === '*') {
+                    if ($parentValue === null || $parentValue === '') continue;
+                } else {
+                    if ($parentValue != $field->trigger_value) continue;
+                }
             }
             $fieldKey = (string) $field->id;
             if (!isset($request->form_data[$fieldKey]) || empty($request->form_data[$fieldKey])) {
@@ -90,7 +96,7 @@ class DataInputController extends Controller
             }
         }
 
-        $record = DB::transaction(function () use ($request, $formFields, $extractedNamaDonatur, $extractedJumlahDonasi) {
+        $record = DB::transaction(function () use ($request, $formFields, $extractedDonaturId, $extractedJumlahDonasi) {
             $initialStatus = 'open'; // Draft/Open
 
             $user = auth()->user();
@@ -105,7 +111,7 @@ class DataInputController extends Controller
                 'sub_unit_id' => $request->sub_unit_id,
                 'campaign_id' => $request->campaign_id,
                 'form_data' => $request->form_data,
-                'nama_donatur' => $extractedNamaDonatur ?? $request->nama_donatur,
+                'donatur_id' => $extractedDonaturId ?? $request->donatur_id,
                 'jumlah_donasi' => $extractedJumlahDonasi ?? $request->jumlah_donasi,
                 'status' => $initialStatus,
             ]);

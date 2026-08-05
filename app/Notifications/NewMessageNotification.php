@@ -36,9 +36,12 @@ class NewMessageNotification extends Notification implements ShouldQueue
 
     public function toWebPush($notifiable, $notification)
     {
+        $faviconPath = \App\Models\SystemConfig::getValue('favicon_path');
+        $iconUrl = $faviconPath ? url('/storage/' . $faviconPath) : url('/favicon.ico');
+
         return (new WebPushMessage)
             ->title('Pesan Baru dari ' . $this->senderName)
-            ->icon('/icon-512x512.png') // Make sure to have this icon or a placeholder
+            ->icon($iconUrl)
             ->body($this->message->body)
             ->action('Lihat Pesan', 'view_message')
             ->data(['url' => url('/')]); // or url('/messages')

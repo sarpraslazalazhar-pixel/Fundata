@@ -400,7 +400,10 @@ export default function Builder({ subUnit, fields: initialFields, allFields, tip
  placeholder="Contoh: Ya"
  required={!!data.parent_field_id}
  />
- <p className="text-[10px] text-gray-400 mt-1">Field ini akan muncul jika user memilih nilai ini pada field parent.</p>
+ <p className="text-[10px] text-gray-400 mt-1">
+   Field ini akan muncul jika user memilih nilai ini pada field parent.<br/>
+   <span className="text-blue-500 font-medium">Tips:</span> Gunakan <code className="bg-slate-200 px-1 rounded">*</code> untuk memunculkan field ini jika parent diisi nilai <strong>apa saja</strong> (tidak kosong).
+ </p>
  </div>
  )}
  </div>

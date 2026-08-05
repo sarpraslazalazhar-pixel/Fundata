@@ -45,9 +45,12 @@ class TicketCreatedUserNotification extends Notification implements ShouldBroadc
 
     public function toWebPush($notifiable, $notification)
     {
+        $faviconPath = \App\Models\SystemConfig::getValue('favicon_path');
+        $iconUrl = $faviconPath ? url('/storage/' . $faviconPath) : url('/favicon.ico');
+
         return (new \NotificationChannels\WebPush\WebPushMessage)
             ->title('Tiket Baru Berhasil Dibuat')
-            ->icon('/images/logo.png')
+            ->icon($iconUrl)
             ->body('Tiket Anda dengan layanan ' . ($this->ticket->subUnit->nama_layanan ?? '-') . ' telah kami terima dan akan segera diproses.')
             ->action('Lihat Tiket', route('tiket.show', $this->ticket->id))
             ->data(['url' => route('tiket.show', $this->ticket->id)]);

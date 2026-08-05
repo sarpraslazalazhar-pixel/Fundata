@@ -250,7 +250,7 @@ export default function Detail({ ticket, formFields, maxRevisions }: DetailProps
  </CardContent>
  </Card>
 
- {(ticket.nama_donatur || ticket.jumlah_donasi) && (
+ {(ticket.donatur || ticket.jumlah_donasi) && (
  <Card className="md:col-span-2">
  <CardHeader>
  <CardTitle>Informasi Donatur</CardTitle>
@@ -258,7 +258,7 @@ export default function Detail({ ticket, formFields, maxRevisions }: DetailProps
  <CardContent className="space-y-2 grid grid-cols-1 md:grid-cols-2">
  <div>
  <span className="text-sm text-slate-500">Nama Donatur:</span>
- <p className="font-medium">{ticket.nama_donatur || '-'}</p>
+ <p className="font-medium">{ticket.donatur?.nama_lengkap || '-'}</p>
  </div>
  <div>
  <span className="text-sm text-slate-500">Jumlah Donasi:</span>
