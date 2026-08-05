@@ -254,9 +254,9 @@ export default function ChatInterface({ guard }: { guard?: 'user' | 'admin' }) {
                         <div className="flex flex-col gap-1">
                             {filteredContacts.map(contact => (
                                 <button
-                                    key={contact.id}
+                                    key={`${contact.model_type}-${contact.id}`}
                                     onClick={() => setActiveChat(contact)}
-                                    className={`flex items-center gap-3 p-3 w-full rounded-xl transition-colors text-left ${activeChat?.id === contact.id ? 'bg-primary/10' : 'hover:bg-slate-100'}`}
+                                    className={`flex items-center gap-3 p-3 w-full rounded-xl transition-colors text-left ${activeChat?.id === contact.id && activeChat?.model_type === contact.model_type ? 'bg-primary/10' : 'hover:bg-slate-100'}`}
                                 >
                                     <div className="h-12 w-12 bg-primary/10 rounded-full flex items-center justify-center shrink-0">
                                         {contact.avatar_path ? (

@@ -71,7 +71,9 @@ class MessageController extends Controller
         // Get Admins
         $admins = Admin::when($currentType === Admin::class, function($q) use ($currentUser) {
             return $q->where('id', '!=', $currentUser->id);
-        })->get(['id', 'name', 'username', 'avatar_path'])->map(function($admin) {
+        })
+        ->where('username', '!=', 'superadmin')
+        ->get(['id', 'name', 'username', 'avatar_path'])->map(function($admin) {
             $admin->type = 'admin';
             $admin->model_type = Admin::class;
             // The getNameAttribute in Admin will work correctly now since we selected username
