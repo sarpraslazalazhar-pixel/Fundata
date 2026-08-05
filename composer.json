@@ -13,6 +13,7 @@
         "laravel/reverb": "^1.0",
         "laravel/tinker": "^3.0",
         "maatwebsite/excel": "^3.1",
+        "pusher/pusher-php-server": "*",
         "spatie/laravel-permission": "^8.3",
         "sweetalert2/laravel": "^1.4",
         "tightenco/ziggy": "^2.6"
