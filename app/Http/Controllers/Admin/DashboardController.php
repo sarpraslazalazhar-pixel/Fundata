@@ -176,6 +176,11 @@ class DashboardController extends Controller
             return [
                 'id' => $campaign->id,
                 'nama_campaign' => $campaign->nama_campaign,
+                'deskripsi' => $campaign->deskripsi,
+                'banner_url' => $campaign->banner_url,
+                'tgl_mulai' => $campaign->tgl_mulai ? $campaign->tgl_mulai->format('Y-m-d') : null,
+                'tgl_selesai' => $campaign->tgl_selesai ? $campaign->tgl_selesai->format('Y-m-d') : null,
+                'is_active' => $campaign->is_active,
                 'target_dana' => (float) $campaign->target_dana,
                 'terkumpul' => (float) $terkumpul,
                 'persentase' => $campaign->target_dana > 0 ? min(100, round(($terkumpul / $campaign->target_dana) * 100, 2)) : 0,
