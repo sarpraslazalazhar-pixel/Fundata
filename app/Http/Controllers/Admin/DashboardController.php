@@ -183,7 +183,12 @@ class DashboardController extends Controller
         });
 
         // ── Akad Progress ──
-        $akads = \App\Models\Akad::where('is_show_on_dashboard', true)->orderBy('nama_akad')->get();
+        if (\Illuminate\Support\Facades\Schema::hasColumn('akads', 'is_show_on_dashboard')) {
+            $akads = \App\Models\Akad::where('is_show_on_dashboard', true)->orderBy('nama_akad')->get();
+        } else {
+            $akads = collect();
+        }
+
         $akadProgress = $akads->map(function ($akad) {
             $terkumpul = Record::where('akad_id', $akad->id)
                 ->whereNotIn('status', ['reject', 'dibatalkan'])
@@ -191,7 +196,7 @@ class DashboardController extends Controller
             return [
                 'id' => $akad->id,
                 'nama_akad' => $akad->nama_akad,
-                'banner_url' => $akad->banner_url,
+                'banner_url' => $akad->banner_url ?? null,
                 'target_dana' => (float) ($akad->target_dana ?? 0),
                 'terkumpul' => (float) $terkumpul,
                 'persentase' => ($akad->target_dana && $akad->target_dana > 0) ? min(100, round(($terkumpul / $akad->target_dana) * 100, 2)) : 0,
