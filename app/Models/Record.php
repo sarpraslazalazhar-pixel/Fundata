@@ -25,7 +25,8 @@ class Record extends Model
     }
     protected $fillable = [
         'user_id', 'divisi_id', 'org_unit_id', 'jabatan_id',
-        'unit_id', 'sub_unit_id', 'campaign_id', 'form_data', 'donatur_id', 'jumlah_donasi', 'status', 'priority', 'assigned_admin_id',
+        'unit_id', 'sub_unit_id', 'campaign_id', 'akad_id',
+        'donatur_id', 'jumlah_donasi', 'form_data', 'status', 'priority', 'assigned_admin_id',
         'revision_count', 'waiting_approval_at', 'is_result_accepted'
     ];
 
@@ -59,6 +60,8 @@ class Record extends Model
         'unit_id' => 'integer',
         'sub_unit_id' => 'integer',
         'campaign_id' => 'integer',
+        'akad_id' => 'integer',
+        'donatur_id' => 'integer',
         'is_result_accepted' => 'boolean',
     ];
 

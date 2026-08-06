@@ -34,6 +34,9 @@ class CampaignController extends Controller
         unset($data['banner']);
 
         if ($request->hasFile('banner')) {
+            if (!$request->file('banner')->isValid()) {
+                return back()->withErrors(['banner' => 'File gambar tidak valid atau ukurannya terlalu besar (Maks 2MB).']);
+            }
             $file = $request->file('banner');
             $filename = uniqid() . '_' . time() . '.' . $file->getClientOriginalExtension();
             $file->move(storage_path('app/public/campaigns'), $filename);
@@ -61,6 +64,9 @@ class CampaignController extends Controller
         unset($data['banner']);
 
         if ($request->hasFile('banner')) {
+            if (!$request->file('banner')->isValid()) {
+                return back()->withErrors(['banner' => 'File gambar tidak valid atau ukurannya terlalu besar (Maks 2MB).']);
+            }
             if ($campaign->banner_path) {
                 Storage::disk('public')->delete($campaign->banner_path);
             }

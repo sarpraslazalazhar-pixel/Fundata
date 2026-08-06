@@ -19,11 +19,13 @@ export default function Dashboard({
  trenDonasi = [], 
  filters = {}, 
  trendFormat,
- campaignProgress = []
+ campaignProgress = [],
+ akadProgress = []
 }: any) {
  const { auth } = usePage<any>().props;
  const user = auth?.user;
  const [selectedCampaign, setSelectedCampaign] = useState<any>(null);
+ const [selectedAkad, setSelectedAkad] = useState<any>(null);
 
  const handleFilterChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
  router.get(route('dashboard'), { period: e.target.value }, { preserveState: true });
@@ -113,6 +115,47 @@ export default function Dashboard({
  </div>
  </div>
  </div>
+
+ {/* AKAD PROGRESS */}
+ {akadProgress?.length > 0 && (
+ <div className="space-y-4">
+ <h2 className="text-lg font-semibold text-slate-800">Progress Akad</h2>
+ <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+ {akadProgress.map((akad: any) => (
+ <Card 
+ key={akad.id} 
+ className="shadow-sm border-slate-200 cursor-pointer hover:shadow-md transition-shadow group"
+ onClick={() => setSelectedAkad(akad)}
+ >
+ <CardContent className="p-4 space-y-3">
+ <div className="flex justify-between items-start">
+ <h3 className="font-semibold text-sm line-clamp-2 group-hover:text-primary transition-colors">{akad.nama_akad}</h3>
+ {akad.target_dana > 0 && (
+ <span className="px-2 py-1 bg-primary/10 text-primary text-xs font-bold rounded-md whitespace-nowrap">
+ {akad.persentase}%
+ </span>
+ )}
+ </div>
+ {akad.target_dana > 0 && (
+ <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+ <div 
+ className="bg-primary h-2 rounded-full transition-all duration-500" 
+ style={{ width: `${akad.persentase}%` }} 
+ />
+ </div>
+ )}
+ <div className="flex justify-between text-xs text-slate-500">
+ <span>Terkumpul: <b className="text-slate-700">Rp {new Intl.NumberFormat('id-ID').format(akad.terkumpul)}</b></span>
+ {akad.target_dana > 0 && (
+ <span>Target: Rp {new Intl.NumberFormat('id-ID').format(akad.target_dana)}</span>
+ )}
+ </div>
+ </CardContent>
+ </Card>
+ ))}
+ </div>
+ </div>
+ )}
 
  {/* CAMPAIGN PROGRESS */}
  {campaignProgress?.length > 0 && (
@@ -320,6 +363,50 @@ export default function Dashboard({
               <div className="flex justify-between text-xs text-slate-500 font-medium pt-1">
                 <span className="text-slate-700">Terkumpul: Rp {new Intl.NumberFormat('id-ID').format(selectedCampaign.terkumpul)}</span>
                 <span>Target: Rp {new Intl.NumberFormat('id-ID').format(selectedCampaign.target_dana)}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </DialogContent>
+  </Dialog>
+
+  {/* Modal Detail Akad */}
+  <Dialog open={!!selectedAkad} onOpenChange={(open) => !open && setSelectedAkad(null)}>
+    <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto p-0 border-0">
+      {selectedAkad && (
+        <div className="flex flex-col bg-white rounded-xl overflow-hidden">
+          {selectedAkad.banner_url ? (
+            <img src={selectedAkad.banner_url} alt="Banner" className="w-full h-56 object-cover" />
+          ) : (
+            <div className="w-full h-48 bg-gradient-to-r from-primary to-blue-600 flex items-center justify-center">
+              <span className="text-white text-lg font-bold opacity-50">Fundata Akad</span>
+            </div>
+          )}
+          <div className="p-6 space-y-4">
+            <div>
+              <h2 className="text-2xl font-bold text-slate-800 leading-tight">{selectedAkad.nama_akad}</h2>
+            </div>
+            
+            <div className="bg-slate-50 p-4 rounded-lg border space-y-3 mt-4">
+              {selectedAkad.target_dana > 0 && (
+                <>
+                  <div className="flex justify-between text-sm font-semibold text-slate-700">
+                    <span>Progress: {selectedAkad.persentase}%</span>
+                  </div>
+                  <div className="w-full bg-slate-200 rounded-full h-2.5 overflow-hidden">
+                    <div 
+                      className="bg-primary h-full rounded-full transition-all duration-500" 
+                      style={{ width: `${selectedAkad.persentase}%` }} 
+                    />
+                  </div>
+                </>
+              )}
+              <div className="flex justify-between text-xs text-slate-500 font-medium pt-1">
+                <span className="text-slate-700">Terkumpul: Rp {new Intl.NumberFormat('id-ID').format(selectedAkad.terkumpul)}</span>
+                {selectedAkad.target_dana > 0 && (
+                  <span>Target: Rp {new Intl.NumberFormat('id-ID').format(selectedAkad.target_dana)}</span>
+                )}
               </div>
             </div>
           </div>

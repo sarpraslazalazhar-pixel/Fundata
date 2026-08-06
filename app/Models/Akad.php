@@ -16,11 +16,16 @@ class Akad extends Model
         'nama_akad',
         'is_campaign_required',
         'is_active',
+        'target_dana',
+        'is_show_on_dashboard',
+        'banner_url',
     ];
 
     protected $casts = [
         'is_campaign_required' => 'boolean',
         'is_active' => 'boolean',
+        'is_show_on_dashboard' => 'boolean',
+        'target_dana' => 'decimal:2',
     ];
 
     /**

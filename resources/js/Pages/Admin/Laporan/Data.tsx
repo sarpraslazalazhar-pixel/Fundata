@@ -365,9 +365,9 @@ export default function LaporanData({
        <div className="space-y-1.5 md:col-span-2">
         <label className="text-xs font-semibold">Jumlah Donasi (Rp)</label>
         <div className="flex items-center gap-2">
-         <input type="number" min="0" className={inputCls} placeholder="Dari" value={jumlahMin} onChange={e => setJumlahMin(e.target.value)} />
+         <input type="text" className={inputCls} placeholder="Dari" value={jumlahMin ? new Intl.NumberFormat('id-ID').format(Number(jumlahMin)) : ''} onChange={e => setJumlahMin(e.target.value.replace(/\D/g, ''))} />
          <span className="text-slate-400">-</span>
-         <input type="number" min="0" className={inputCls} placeholder="Sampai" value={jumlahMax} onChange={e => setJumlahMax(e.target.value)} />
+         <input type="text" className={inputCls} placeholder="Sampai" value={jumlahMax ? new Intl.NumberFormat('id-ID').format(Number(jumlahMax)) : ''} onChange={e => setJumlahMax(e.target.value.replace(/\D/g, ''))} />
         </div>
        </div>
       </div>

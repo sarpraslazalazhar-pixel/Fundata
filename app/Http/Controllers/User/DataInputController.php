@@ -60,6 +60,7 @@ class DataInputController extends Controller
         $formFields = FormField::where('sub_unit_id', $request->sub_unit_id)->get();
         $extractedDonaturId = null;
         $extractedJumlahDonasi = null;
+        $extractedAkadId = null;
 
         foreach ($formFields as $field) {
             $fieldKey = (string) $field->id;
@@ -70,11 +71,13 @@ class DataInputController extends Controller
                 if ($field->tipe_field === 'donatur_lookup') {
                     $extractedDonaturId = $val;
                 }
+                if ($field->tipe_field === 'akad') {
+                    $extractedAkadId = $val;
+                }
                 if (stripos($field->label, 'donasi') !== false || stripos($field->label, 'jumlah donasi') !== false || stripos($field->label, 'nominal') !== false) {
                     // Hanya set ke jumlah_donasi jika tipe data numerik/nominal_rp, atau string angka
-                    $cleanVal = str_replace(['Rp', '.', ',', ' '], '', $val);
-                    if (is_numeric($cleanVal)) {
-                        $extractedJumlahDonasi = (float) $cleanVal;
+                    if (is_numeric(str_replace(['Rp', '.', ',', ' '], '', $val))) {
+                        $extractedJumlahDonasi = (float) str_replace(['Rp', '.', ',', ' '], '', $val);
                         if ($extractedJumlahDonasi >= 9999999999999.99) {
                             throw \Illuminate\Validation\ValidationException::withMessages([
                                 "form_data.{$fieldKey}" => "Jumlah donasi terlalu besar. Maksimal yang diizinkan adalah Rp 9.999.999.999.999"
@@ -102,7 +105,7 @@ class DataInputController extends Controller
             }
         }
 
-        $record = DB::transaction(function () use ($request, $formFields, $extractedDonaturId, $extractedJumlahDonasi) {
+        $record = DB::transaction(function () use ($request, $formFields, $extractedDonaturId, $extractedJumlahDonasi, $extractedAkadId) {
             $initialStatus = 'open'; // Draft/Open
 
             $user = auth()->user();
@@ -116,6 +119,7 @@ class DataInputController extends Controller
                 'unit_id' => $request->unit_id,
                 'sub_unit_id' => $request->sub_unit_id,
                 'campaign_id' => $request->campaign_id,
+                'akad_id' => $extractedAkadId,
                 'form_data' => $request->form_data,
                 'donatur_id' => $extractedDonaturId ?? $request->donatur_id,
                 'jumlah_donasi' => $extractedJumlahDonasi ?? $request->jumlah_donasi,

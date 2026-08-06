@@ -27,6 +27,9 @@ interface Akad {
   nama_akad: string;
   is_campaign_required: boolean;
   is_active: boolean;
+  target_dana: number | null;
+  is_show_on_dashboard: boolean;
+  banner_url?: string | null;
   children?: Akad[];
 }
 
@@ -34,11 +37,15 @@ export default function AkadIndex({ akads, parentOptions }: { akads: Akad[], par
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editAkad, setEditAkad] = useState<Akad | null>(null);
 
-  const { data, setData, post, put, delete: destroy, processing, errors, reset } = useForm({
+  const { data, setData, post, put, delete: destroy, processing, errors, reset, transform } = useForm({
     parent_id: '',
     nama_akad: '',
     is_campaign_required: false,
     is_active: true,
+    target_dana: '' as string | number,
+    is_show_on_dashboard: false,
+    banner: null as File | null,
+    _method: 'POST',
   });
 
   const openCreate = () => {
@@ -53,17 +60,25 @@ export default function AkadIndex({ akads, parentOptions }: { akads: Akad[], par
       nama_akad: akad.nama_akad,
       is_campaign_required: akad.is_campaign_required,
       is_active: akad.is_active,
+      target_dana: akad.target_dana || '',
+      is_show_on_dashboard: akad.is_show_on_dashboard,
+      banner: null,
+      _method: 'PUT',
     });
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (editAkad) {
-      put(route('admin.master.akad.update', editAkad.id), {
+      transform((data) => ({ ...data, _method: 'PUT' }));
+      post(route('admin.master.akad.update', editAkad.id), {
+        forceFormData: true,
         onSuccess: () => setEditAkad(null),
       });
     } else {
+      transform((data) => ({ ...data, _method: 'POST' }));
       post(route('admin.master.akad.store'), {
+        forceFormData: true,
         onSuccess: () => {
           setIsCreateOpen(false);
           reset();
@@ -197,7 +212,52 @@ export default function AkadIndex({ akads, parentOptions }: { akads: Akad[], par
               <Label htmlFor="is_campaign" className="cursor-pointer">Wajib Pilih Campaign</Label>
             </div>
 
+            <div>
+              <Label>Target Dana (Opsional)</Label>
+              <div className="relative mt-1.5">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm">Rp</span>
+                <input
+                  type="text"
+                  className="w-full rounded-md border border-input bg-transparent py-2 pl-9 pr-3 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
+                  value={data.target_dana ? new Intl.NumberFormat('id-ID').format(Number(data.target_dana)) : ''}
+                  onChange={e => {
+                    const raw = e.target.value.replace(/\D/g, '');
+                    setData('target_dana', raw ? Number(raw) : '');
+                  }}
+                  placeholder="0"
+                />
+              </div>
+              {errors.target_dana && <p className="text-red-500 text-sm mt-1">{errors.target_dana}</p>}
+            </div>
+
             <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="is_show_on_dashboard"
+                className="rounded border-gray-300 text-primary shadow-sm focus:border-primary focus:ring focus:ring-primary focus:ring-opacity-50 h-4 w-4"
+                checked={data.is_show_on_dashboard}
+                onChange={e => setData('is_show_on_dashboard', e.target.checked)}
+              />
+              <Label htmlFor="is_show_on_dashboard" className="cursor-pointer">Tampilkan di Dashboard Progress</Label>
+            </div>
+
+            <div>
+              <Label>Gambar Banner (Opsional)</Label>
+              {editAkad?.banner_url && (
+                <div className="mb-2">
+                  <img src={editAkad.banner_url} alt="Current Banner" className="h-20 w-auto rounded border" />
+                </div>
+              )}
+              <Input
+                type="file"
+                accept="image/*"
+                onChange={e => setData('banner', e.target.files ? e.target.files[0] : null)}
+                className="mt-1.5 cursor-pointer file:cursor-pointer"
+              />
+              {errors.banner && <p className="text-red-500 text-sm mt-1">{errors.banner}</p>}
+            </div>
+
+            <div className="flex items-center space-x-2 pt-2 border-t mt-4">
               <input
                 type="checkbox"
                 id="is_active"

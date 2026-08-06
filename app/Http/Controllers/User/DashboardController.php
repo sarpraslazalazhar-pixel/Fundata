@@ -150,6 +150,22 @@ class DashboardController extends Controller
             ];
         });
 
+        // ── Akad Progress ──
+        $akads = \App\Models\Akad::where('is_show_on_dashboard', true)->orderBy('nama_akad')->get();
+        $akadProgress = $akads->map(function($akad) {
+            $terkumpul = Record::where('akad_id', $akad->id)
+                ->whereNotIn('status', ['reject', 'dibatalkan'])
+                ->sum('jumlah_donasi') ?? 0;
+            return [
+                'id' => $akad->id,
+                'nama_akad' => $akad->nama_akad,
+                'banner_url' => $akad->banner_url,
+                'target_dana' => (float) ($akad->target_dana ?? 0),
+                'terkumpul' => (float) $terkumpul,
+                'persentase' => ($akad->target_dana && $akad->target_dana > 0) ? min(100, round(($terkumpul / $akad->target_dana) * 100, 2)) : 0,
+            ];
+        });
+
         return inertia('User/Dashboard', [
             'recentTickets' => $recentTickets,
             'stats' => $stats,
@@ -162,6 +178,7 @@ class DashboardController extends Controller
             'filters' => ['period' => $period],
             'trendFormat' => $trendFormat,
             'campaignProgress' => $campaignProgress,
+            'akadProgress' => $akadProgress,
         ]);
     }
 }
