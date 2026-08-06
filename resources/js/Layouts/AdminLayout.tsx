@@ -18,6 +18,7 @@ import {
   MoreHorizontal,
   Sparkles,
   MessageSquare,
+  ChevronsUpDown,
 } from 'lucide-react';
 import { Button } from '@/Components/ui/button';
 import { Sheet, SheetContent } from '@/Components/ui/sheet';
@@ -119,38 +120,52 @@ const adminNavItems: NavItem[] = [
   },
 ];
 
+/* ─── Premium NavLink with sliding active pill ─── */
 function NavLink({ item, active, isCollapsed }: { item: NavItem; active: boolean; isCollapsed: boolean }) {
   const Icon = item.icon;
 
   return (
-    <Link
-      href={item.route!}
-      title={isCollapsed ? item.label : undefined}
-      className={`group relative flex items-center justify-center transition-all duration-200 ${isCollapsed
-        ? 'h-10 w-10 rounded-xl mx-auto'
-        : 'gap-3 rounded-xl px-3.5 py-2.5 text-sm font-medium w-full'
-      } ${active
-        ? 'text-slate-900 font-semibold'
-        : 'text-muted-foreground hover:text-slate-900'
-      }`}
+    <motion.div
+      whileHover={{ x: isCollapsed ? 0 : 3 }}
+      whileTap={{ scale: 0.97 }}
+      transition={{ type: 'spring', stiffness: 400, damping: 25 }}
     >
-      {/* Animated Active Sliding Indicator Pill */}
-      {active && (
-        <motion.div
-          layoutId="admin-active-nav-pill"
-          className="absolute inset-0 bg-slate-100/90 rounded-xl z-0 border border-slate-200/50 shadow-xs"
-          transition={{ type: 'spring', stiffness: 450, damping: 32 }}
-        />
-      )}
+      <Link
+        href={item.route!}
+        title={isCollapsed ? item.label : undefined}
+        className={`group relative flex items-center justify-center transition-all duration-200 ${isCollapsed
+          ? 'h-10 w-10 rounded-xl mx-auto'
+          : 'gap-3 rounded-xl px-3.5 py-2.5 text-sm font-medium w-full'
+        } ${active
+          ? 'text-primary font-semibold'
+          : 'text-muted-foreground hover:text-slate-900'
+        }`}
+      >
+        {/* Active Indicator Pill */}
+        {active && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="absolute inset-0 bg-primary/[0.08] rounded-xl z-0 border border-primary/20 shadow-[0_0_12px_-3px_rgba(15,123,70,0.15)]"
+            transition={{ duration: 0.15 }}
+          />
+        )}
 
-      <div className={`relative z-10 flex items-center ${isCollapsed ? 'justify-center' : 'gap-3 w-full'}`}>
-        <Icon className={`h-4 w-4 shrink-0 transition-transform duration-200 ${active ? 'scale-110 text-slate-900' : 'group-hover:scale-110'}`} />
-        {!isCollapsed && <span className="truncate">{item.label}</span>}
-      </div>
-    </Link>
+        <div className={`relative z-10 flex items-center ${isCollapsed ? 'justify-center' : 'gap-3 w-full'}`}>
+          <motion.div
+            animate={active ? { scale: 1.12 } : { scale: 1 }}
+            transition={{ type: 'spring', stiffness: 500, damping: 20 }}
+          >
+            <Icon className={`h-4 w-4 shrink-0 transition-colors duration-200 ${active ? 'text-primary' : 'group-hover:text-slate-700'}`} />
+          </motion.div>
+          {!isCollapsed && <span className="truncate">{item.label}</span>}
+        </div>
+      </Link>
+    </motion.div>
   );
 }
 
+/* ─── Premium NavDropdown with animated sub-menu ─── */
 function NavDropdown({ item, isCollapsed, url, permissions, auth }: { item: NavItem; isCollapsed: boolean; url: string; permissions?: string[]; auth?: any }) {
   const visibleChildren = item.children?.filter(child =>
     !child.permissionGroup || auth?.is_superadmin || (permissions && permissions.includes(child.permissionGroup))
@@ -182,6 +197,7 @@ function NavDropdown({ item, isCollapsed, url, permissions, auth }: { item: NavI
 
   const Icon = item.icon;
 
+  /* ── Collapsed: Popover dropdown ── */
   if (isCollapsed) {
     return (
       <div className="relative flex justify-center w-full">
@@ -189,19 +205,20 @@ function NavDropdown({ item, isCollapsed, url, permissions, auth }: { item: NavI
           <DropdownMenuTrigger
             aria-label={item.label}
             className={`group relative flex h-10 w-10 items-center justify-center rounded-xl transition-all duration-200 cursor-pointer outline-none ${isChildActive || popoverOpen
-              ? 'text-slate-900 font-semibold'
+              ? 'text-primary font-semibold'
               : 'text-muted-foreground hover:text-slate-900'
             }`}
           >
             {(isChildActive || popoverOpen) && (
               <motion.div
-                layoutId="admin-active-nav-pill"
-                className="absolute inset-0 bg-slate-100/90 rounded-xl z-0 border border-slate-200/50 shadow-xs"
-                transition={{ type: 'spring', stiffness: 450, damping: 32 }}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="absolute inset-0 bg-primary/[0.08] rounded-xl z-0 border border-primary/20 shadow-[0_0_12px_-3px_rgba(15,123,70,0.15)]"
+                transition={{ duration: 0.15 }}
               />
             )}
             <div className="relative z-10 flex items-center justify-center">
-              <Icon className={`h-4 w-4 shrink-0 transition-transform duration-200 ${isChildActive || popoverOpen ? 'scale-110 text-slate-900' : 'group-hover:scale-110'}`} />
+              <Icon className={`h-4 w-4 shrink-0 transition-transform duration-200 ${isChildActive || popoverOpen ? 'scale-110 text-primary' : 'group-hover:scale-110'}`} />
             </div>
           </DropdownMenuTrigger>
 
@@ -220,11 +237,11 @@ function NavDropdown({ item, isCollapsed, url, permissions, auth }: { item: NavI
                     href={child.route}
                     onClick={() => setPopoverOpen(false)}
                     className={`flex items-center gap-2.5 px-2.5 py-2 text-xs font-medium rounded-lg cursor-pointer transition-colors w-full outline-none ${active
-                      ? 'bg-slate-100/80 text-slate-900 font-semibold'
+                      ? 'bg-primary/[0.08] text-primary font-semibold'
                       : 'text-muted-foreground hover:bg-slate-50 hover:text-slate-900'
                     }`}
                   >
-                    <ChildIcon className={`h-3.5 w-3.5 shrink-0 ${active ? 'text-slate-900' : ''}`} />
+                    <ChildIcon className={`h-3.5 w-3.5 shrink-0 ${active ? 'text-primary' : ''}`} />
                     <span className="truncate">{child.label}</span>
                   </Link>
                 );
@@ -236,31 +253,43 @@ function NavDropdown({ item, isCollapsed, url, permissions, auth }: { item: NavI
     );
   }
 
+  /* ── Expanded: Collapsible sub-menu ── */
   return (
     <div className="flex flex-col gap-0.5">
       <motion.button
         type="button"
         whileTap={{ scale: 0.98 }}
+        whileHover={{ x: 3 }}
+        transition={{ type: 'spring', stiffness: 400, damping: 25 }}
         onClick={() => setIsOpen(!isOpen)}
         className={`group relative flex items-center justify-between gap-3 rounded-xl px-3.5 py-2.5 text-sm font-medium w-full transition-colors duration-150 ${isChildActive
-          ? 'bg-slate-100/50 text-slate-900 font-semibold'
-          : 'text-muted-foreground hover:bg-slate-50 hover:text-slate-900'
+          ? 'text-primary font-semibold'
+          : 'text-muted-foreground hover:text-slate-900'
         }`}
       >
         {isChildActive && (
           <motion.div
-            layoutId="admin-active-nav-pill"
-            className="absolute inset-0 bg-slate-100/50 rounded-xl z-0 border border-slate-200/40"
-            transition={{ type: 'spring', stiffness: 450, damping: 32 }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="absolute inset-0 bg-primary/[0.06] rounded-xl z-0 border border-primary/15"
+            transition={{ duration: 0.15 }}
           />
         )}
         <div className="relative z-10 flex items-center justify-between gap-3 w-full">
           <div className="flex items-center gap-3 min-w-0">
-            <Icon className={`h-4 w-4 shrink-0 transition-transform duration-200 ${isChildActive ? 'scale-110 text-slate-900' : 'group-hover:scale-110'}`} />
+            <motion.div
+              animate={isChildActive ? { scale: 1.12 } : { scale: 1 }}
+              transition={{ type: 'spring', stiffness: 500, damping: 20 }}
+            >
+              <Icon className={`h-4 w-4 shrink-0 transition-colors duration-200 ${isChildActive ? 'text-primary' : 'group-hover:text-slate-700'}`} />
+            </motion.div>
             <span className="truncate">{item.label}</span>
           </div>
-          <motion.div animate={{ rotate: isOpen ? 180 : 0 }} transition={{ duration: 0.2 }}>
-            <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" />
+          <motion.div
+            animate={{ rotate: isOpen ? 180 : 0 }}
+            transition={{ type: 'spring', stiffness: 300, damping: 22 }}
+          >
+            <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground/60" />
           </motion.div>
         </div>
       </motion.button>
@@ -271,39 +300,48 @@ function NavDropdown({ item, isCollapsed, url, permissions, auth }: { item: NavI
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.2, ease: 'easeInOut' }}
-            className="flex flex-col gap-0.5 ml-4 pl-3 border-l border-border/60 py-1 overflow-hidden"
+            transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
+            className="overflow-hidden"
           >
-            {visibleChildren.map((child, idx) => {
-              const active = isRouteActive(url, child.route);
-              const ChildIcon = child.icon;
-              return (
-                <Link
-                  key={idx}
-                  href={child.route}
-                  className={`relative flex items-center gap-2.5 rounded-lg px-3 py-2 text-xs font-medium transition-colors duration-150 ${active
-                    ? 'text-slate-900 font-semibold'
-                    : 'text-muted-foreground hover:text-slate-900'
-                  }`}
-                >
-                  {active && (
-                    <motion.div
-                      layoutId="admin-active-subnav-pill"
-                      className="absolute inset-0 bg-slate-100/90 rounded-lg z-0 border border-slate-200/50"
-                      transition={{ type: 'spring', stiffness: 450, damping: 32 }}
-                    />
-                  )}
-                  <div className="relative z-10 flex items-center gap-2.5 w-full">
-                    {ChildIcon ? (
-                      <ChildIcon className={`h-3.5 w-3.5 shrink-0 ${active ? 'text-slate-900' : ''}`} />
-                    ) : (
-                      <span className={`h-1.5 w-1.5 rounded-full shrink-0 ${active ? 'bg-slate-900' : 'bg-muted-foreground/40'}`} />
-                    )}
-                    <span className="truncate">{child.label}</span>
+            <div className="flex flex-col gap-0.5 ml-4 pl-3 border-l-2 border-primary/10 py-1">
+              {visibleChildren.map((child, idx) => {
+                const active = isRouteActive(url, child.route);
+                const ChildIcon = child.icon;
+                return (
+                  <div key={idx}>
+                    <Link
+                      href={child.route}
+                      className={`relative flex items-center gap-2.5 rounded-lg px-3 py-2 text-xs font-medium transition-colors duration-150 ${active
+                        ? 'text-primary font-semibold'
+                        : 'text-muted-foreground hover:text-slate-900'
+                      }`}
+                    >
+                      {active && (
+                        <motion.div
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          className="absolute inset-0 bg-primary/[0.07] rounded-lg z-0 border border-primary/15"
+                          transition={{ duration: 0.15 }}
+                        />
+                      )}
+                      <div className="relative z-10 flex items-center gap-2.5 w-full">
+                        {ChildIcon ? (
+                          <motion.div
+                            animate={active ? { scale: 1.1 } : { scale: 1 }}
+                            transition={{ type: 'spring', stiffness: 500, damping: 20 }}
+                          >
+                            <ChildIcon className={`h-3.5 w-3.5 shrink-0 ${active ? 'text-primary' : ''}`} />
+                          </motion.div>
+                        ) : (
+                          <span className={`h-1.5 w-1.5 rounded-full shrink-0 ${active ? 'bg-primary' : 'bg-muted-foreground/40'}`} />
+                        )}
+                        <span className="truncate">{child.label}</span>
+                      </div>
+                    </Link>
                   </div>
-                </Link>
-              );
-            })}
+                );
+              })}
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
@@ -317,6 +355,7 @@ export default function AdminLayout({ children, title }: AdminLayoutProps) {
   const [profileOpen, setProfileOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { subscribe } = useWebPush(admin);
+  const sidebarScrollRef = useRef<HTMLDivElement>(null);
 
   const soundUrl = appConfig?.notification_sound_path
     ? `/system/notification-sound?v=${encodeURIComponent(appConfig.notification_sound_path)}`
@@ -349,6 +388,30 @@ export default function AdminLayout({ children, title }: AdminLayoutProps) {
       localStorage.setItem('admin_sidebar_collapsed', String(nextState));
     }
   };
+
+  /* ── Scroll Preservation: save on scroll, restore on page load ── */
+  const url = usePage().url;
+
+  useEffect(() => {
+    const el = sidebarScrollRef.current;
+    if (!el) return;
+    const handleScroll = () => {
+      sessionStorage.setItem('admin_sidebar_scroll', String(el.scrollTop));
+    };
+    el.addEventListener('scroll', handleScroll, { passive: true });
+    return () => el.removeEventListener('scroll', handleScroll);
+  }, [isCollapsed]); // re-attach when collapse state changes
+
+  useEffect(() => {
+    const saved = sessionStorage.getItem('admin_sidebar_scroll');
+    if (saved && sidebarScrollRef.current) {
+      requestAnimationFrame(() => {
+        if (sidebarScrollRef.current) {
+          sidebarScrollRef.current.scrollTop = parseInt(saved, 10);
+        }
+      });
+    }
+  }, [url]);
 
   useEffect(() => {
     if (flash?.success) {
@@ -412,48 +475,71 @@ export default function AdminLayout({ children, title }: AdminLayoutProps) {
     }
   }, [flash, admin]);
 
-  const url = usePage().url;
   const isActive = (routePath: string) => isRouteActive(url, routePath);
 
   const systemName = appConfig?.nama_sistem || 'Fundata';
   const faviconUrl = appConfig?.favicon_path ? `/storage/${appConfig.favicon_path}` : '/favicon.ico';
   const logoUrl = appConfig?.logo_path ? `/storage/${appConfig.logo_path}` : null;
 
-  const renderSidebar = (collapsed: boolean) => (
+  const renderSidebar = (collapsed: boolean, isDesktop: boolean) => (
     <div className="flex h-full min-h-0 flex-col justify-between">
-      {/* Header / Brand Logo */}
-      <div className={`flex h-14 shrink-0 items-center border-b px-4 lg:h-[60px] transition-all duration-300 ${collapsed ? 'justify-center' : 'justify-between'}`}>
+      {/* ── Header / Brand Logo ── */}
+      <div className={`flex h-14 shrink-0 items-center border-b border-slate-200/60 px-4 lg:h-[60px] transition-all duration-300 ${collapsed ? 'justify-center' : 'justify-between'}`}>
         <Link href="/admin/dashboard" className="flex items-center gap-2.5 min-w-0">
-          {collapsed ? (
-            <motion.div
-              whileHover={{ scale: 1.05 }}
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-100/80 p-1.5 shadow-xs"
-            >
-              <img
-                src={faviconUrl}
-                alt="Favicon"
-                className="h-full w-full object-contain"
-                onError={(e) => {
-                  (e.target as HTMLElement).style.display = 'none';
-                }}
-              />
-            </motion.div>
-          ) : (
-            logoUrl ? (
-              <img id="displayBannerImg" src={logoUrl} alt="Banner Logo" className="h-10 max-w-[180px] object-contain transition-all" />
+          <AnimatePresence mode="wait">
+            {collapsed ? (
+              <motion.div
+                key="collapsed-logo"
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.8 }}
+                transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+                whileHover={{ scale: 1.08 }}
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary/10 to-primary/5 p-1.5 ring-1 ring-primary/20 shadow-sm"
+              >
+                <img
+                  src={faviconUrl}
+                  alt="Favicon"
+                  className="h-full w-full object-contain"
+                  onError={(e) => {
+                    (e.target as HTMLElement).style.display = 'none';
+                  }}
+                />
+              </motion.div>
             ) : (
-              <div className="flex items-center gap-2">
-                <Sparkles className="h-5 w-5 text-primary" />
-                <span className="text-base font-bold tracking-tight text-foreground">{systemName}</span>
-              </div>
-            )
-          )}
+              <motion.div
+                key="expanded-logo"
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -10 }}
+                transition={{ type: 'spring', stiffness: 300, damping: 22 }}
+                className="flex items-center gap-2.5 min-w-0"
+              >
+                {logoUrl ? (
+                  <img id="displayBannerImg" src={logoUrl} alt="Banner Logo" className="h-12 lg:h-14 max-w-[290px] w-auto object-contain object-left transition-all" />
+                ) : (
+                  <>
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-emerald-600 shadow-md shadow-primary/25">
+                      <Sparkles className="h-4 w-4 text-white" />
+                    </div>
+                    <div className="flex flex-col min-w-0">
+                      <span className="text-sm font-bold tracking-tight text-foreground truncate">{systemName}</span>
+                      <span className="text-[10px] text-muted-foreground/60 truncate">Management System</span>
+                    </div>
+                  </>
+                )}
+              </motion.div>
+            )}
+          </AnimatePresence>
         </Link>
       </div>
 
-      {/* Navigation Items */}
-      <div className="flex-1 min-h-0 overflow-y-auto py-4 px-2 sidebar-scroll">
-        <nav className={`flex flex-col gap-1 pb-6 ${collapsed ? 'items-center' : ''}`}>
+      {/* ── Navigation Items ── */}
+      <div
+        ref={isDesktop ? sidebarScrollRef : undefined}
+        className="flex-1 min-h-0 overflow-y-auto py-4 px-2 sidebar-scroll"
+      >
+        <nav className={`flex flex-col gap-0.5 pb-6 ${collapsed ? 'items-center' : ''}`}>
           {adminNavItems.map((item, index) => {
             if (!auth.is_superadmin && item.permissionGroup && auth.permissions && !auth.permissions.includes(item.permissionGroup)) {
               return null;
@@ -462,15 +548,21 @@ export default function AdminLayout({ children, title }: AdminLayoutProps) {
             if (item.type === 'header') {
               if (collapsed) {
                 return (
-                  <div key={index} className="my-2 border-t border-border/60 w-8 mx-auto" />
+                  <div key={index} className="my-2.5 border-t border-border/50 w-6 mx-auto" />
                 );
               }
               return (
-                <div key={index} className="px-3 pt-4 pb-1">
-                  <p className="text-[11px] font-bold text-muted-foreground/70 uppercase tracking-widest">
+                <motion.div
+                  key={index}
+                  initial={{ opacity: 0, y: -4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.02, duration: 0.3 }}
+                  className="px-3.5 pt-5 pb-1.5"
+                >
+                  <p className="text-[10px] font-bold text-muted-foreground/50 uppercase tracking-[0.14em]">
                     {item.label}
                   </p>
-                </div>
+                </motion.div>
               );
             }
 
@@ -499,43 +591,43 @@ export default function AdminLayout({ children, title }: AdminLayoutProps) {
         </nav>
       </div>
 
-      {/* Footer Profile Box */}
-      <div className="border-t border-border/60 p-2.5">
+      {/* ── Footer Profile Box ── */}
+      <div className="border-t border-slate-200/60 p-2.5">
         {collapsed ? (
           <div className="flex justify-center">
             <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
+              whileHover={{ scale: 1.08 }}
+              whileTap={{ scale: 0.92 }}
               onClick={() => setProfileOpen(true)}
-              className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-100 overflow-hidden outline-none border border-slate-200/60"
+              className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-slate-100 to-slate-200 overflow-hidden outline-none ring-1 ring-slate-200/80 shadow-sm"
               title={admin?.name || admin?.username}
             >
               {admin?.avatar_path ? (
                 <img src={`/storage/${admin.avatar_path}`} alt="Avatar" className="h-full w-full object-cover" />
               ) : (
-                <User className="h-4 w-4 text-slate-600" />
+                <User className="h-4 w-4 text-slate-500" />
               )}
             </motion.button>
           </div>
         ) : (
-          <div
+          <motion.div
+            whileHover={{ backgroundColor: 'rgba(241, 245, 249, 0.8)' }}
             onClick={() => setProfileOpen(true)}
-            className="flex items-center justify-between gap-2.5 rounded-xl p-2 transition-all hover:bg-slate-100/80 cursor-pointer"
+            className="flex items-center gap-2.5 rounded-xl p-2.5 transition-all cursor-pointer"
           >
-            <div className="flex items-center gap-2.5 min-w-0">
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-100 overflow-hidden">
-                {admin?.avatar_path ? (
-                  <img src={`/storage/${admin.avatar_path}`} alt="Avatar" className="h-full w-full object-cover" />
-                ) : (
-                  <User className="h-4 w-4 text-slate-600" />
-                )}
-              </div>
-              <div className="min-w-0">
-                <p className="text-xs font-semibold text-foreground truncate">{admin?.name || admin?.username || 'Admin'}</p>
-                <p className="text-[10px] text-muted-foreground truncate">{admin?.email || ''}</p>
-              </div>
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-slate-100 to-slate-200 overflow-hidden ring-1 ring-slate-200/80 shadow-sm">
+              {admin?.avatar_path ? (
+                <img src={`/storage/${admin.avatar_path}`} alt="Avatar" className="h-full w-full object-cover" />
+              ) : (
+                <User className="h-4 w-4 text-slate-500" />
+              )}
             </div>
-          </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-semibold text-foreground truncate">{admin?.name || admin?.username || 'Admin'}</p>
+              <p className="text-[10px] text-muted-foreground/70 truncate">{admin?.email || ''}</p>
+            </div>
+            <ChevronsUpDown className="h-3.5 w-3.5 text-muted-foreground/40 shrink-0" />
+          </motion.div>
         )}
       </div>
     </div>
@@ -556,15 +648,15 @@ export default function AdminLayout({ children, title }: AdminLayoutProps) {
       {/* Mobile Sheet Sidebar */}
       <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
         <SheetContent side="left" className="flex flex-col p-0 w-72">
-          {renderSidebar(false)}
+          {renderSidebar(false, false)}
         </SheetContent>
       </Sheet>
 
-      {/* Desktop Sidebar (Collapsible) */}
+      {/* Desktop Sidebar */}
       <div className="relative hidden border-r border-slate-200/60 bg-white md:flex flex-col h-full max-h-screen overflow-visible transition-all duration-300 ease-in-out">
-        {renderSidebar(isCollapsed)}
+        {renderSidebar(isCollapsed, true)}
 
-        {/* Floating Collapse/Expand Toggle Button */}
+        {/* Floating Collapse/Expand Toggle */}
         <motion.div
           whileHover={{ scale: 1.15 }}
           whileTap={{ scale: 0.9 }}
@@ -574,14 +666,15 @@ export default function AdminLayout({ children, title }: AdminLayoutProps) {
             variant="outline"
             size="icon"
             onClick={toggleCollapse}
-            className="h-7 w-7 rounded-full border bg-background shadow-md hover:bg-accent text-foreground"
+            className="h-7 w-7 rounded-full border bg-background shadow-md hover:bg-accent text-foreground hover:shadow-lg transition-shadow"
             title={isCollapsed ? "Buka Sidebar" : "Tutup Sidebar"}
           >
-            {isCollapsed ? (
+            <motion.div
+              animate={{ rotate: isCollapsed ? 0 : 180 }}
+              transition={{ type: 'spring', stiffness: 300, damping: 22 }}
+            >
               <ChevronRight className="h-3.5 w-3.5 text-primary" />
-            ) : (
-              <ChevronLeft className="h-3.5 w-3.5 text-primary" />
-            )}
+            </motion.div>
           </Button>
         </motion.div>
       </div>
