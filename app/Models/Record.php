@@ -29,12 +29,17 @@ class Record extends Model
         'revision_count', 'waiting_approval_at', 'is_result_accepted', 'link_kwitansi', 'nomor_kwitansi'
     ];
 
-    protected $appends = ['formatted_id', 'judul', 'sub_unit_nama', 'donatur_nama'];
-    protected $with = ['subUnit', 'donatur'];
+    protected $appends = ['formatted_id', 'judul', 'sub_unit_nama', 'unit_nama', 'donatur_nama'];
+    protected $with = ['unit', 'subUnit', 'donatur'];
 
     public function getSubUnitNamaAttribute()
     {
         return $this->subUnit ? $this->subUnit->nama_layanan : null;
+    }
+
+    public function getUnitNamaAttribute()
+    {
+        return $this->unit ? $this->unit->nama_unit : ($this->subUnit && $this->subUnit->unit ? $this->subUnit->unit->nama_unit : null);
     }
 
     public function getDonaturNamaAttribute()

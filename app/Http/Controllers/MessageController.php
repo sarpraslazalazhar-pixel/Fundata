@@ -310,18 +310,31 @@ class MessageController extends Controller
         $currentUser = $this->getCurrentUser($request);
         $currentType = $this->getCurrentType($request);
 
-        $query = Record::with('subUnit')->orderBy('created_at', 'desc')->limit(50);
+        $query = Record::with(['unit', 'subUnit.unit', 'donatur'])->orderBy('created_at', 'desc')->limit(50);
 
         if ($currentType === User::class) {
             $query->where('user_id', $currentUser->id);
         }
 
-        $records = $query->get(['id', 'sub_unit_id', 'form_data', 'created_at']);
+        $records = $query->get();
         
         $options = $records->map(function($record) {
+            $ticketNumber = 'Tiket #' . $record->formatted_id;
+            $donaturName = $record->donatur_nama;
+            $unitName = $record->unit_nama;
+            $subUnitName = $record->sub_unit_nama;
+            
+            $displayTitle = $donaturName 
+                ? $ticketNumber . ' - ' . $donaturName 
+                : $ticketNumber . ' - ' . ($record->judul ?? 'Pengajuan');
+
             return [
                 'id' => $record->id,
-                'title' => $record->judul ?? 'Tiket #' . $record->id,
+                'ticket_number' => $ticketNumber,
+                'donatur_name' => $donaturName,
+                'unit_name' => $unitName,
+                'sub_unit_name' => $subUnitName,
+                'title' => $displayTitle,
                 'model_type' => Record::class,
                 'created_at' => $record->created_at,
             ];

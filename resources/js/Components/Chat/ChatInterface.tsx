@@ -497,8 +497,21 @@ export default function ChatInterface({ guard }: { guard?: 'user' | 'admin' }) {
                                             className="text-left p-3 border rounded-xl hover:border-primary hover:bg-primary/5 transition-colors flex items-center justify-between group"
                                         >
                                             <div className="min-w-0 flex-1 pr-4">
-                                                <div className="font-semibold text-sm text-slate-800 truncate group-hover:text-primary transition-colors">{ctx.title}</div>
-                                                <div className="text-xs text-slate-500 mt-1">{format(new Date(ctx.created_at), 'dd MMM yyyy HH:mm')}</div>
+                                                <div className="flex items-center gap-1.5 mb-0.5 flex-wrap">
+                                                    <span className="font-bold text-sm text-primary">{ctx.ticket_number || `Tiket #${ctx.id}`}</span>
+                                                    {ctx.donatur_name ? (
+                                                        <span className="font-semibold text-sm text-slate-800 truncate">- {ctx.donatur_name}</span>
+                                                    ) : (
+                                                        <span className="font-semibold text-sm text-slate-700 truncate">- {ctx.title}</span>
+                                                    )}
+                                                </div>
+                                                {(ctx.unit_name || ctx.sub_unit_name) && (
+                                                    <div className="text-xs text-slate-600 font-medium truncate mb-1">
+                                                        {ctx.unit_name && <span className="bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded text-[11px] font-semibold mr-1">{ctx.unit_name}</span>}
+                                                        {ctx.sub_unit_name && <span className="text-slate-500">{ctx.sub_unit_name}</span>}
+                                                    </div>
+                                                )}
+                                                <div className="text-[11px] text-slate-400">{format(new Date(ctx.created_at), 'dd MMM yyyy HH:mm')}</div>
                                             </div>
                                             <Link2 className="h-4 w-4 text-slate-300 group-hover:text-primary transition-colors shrink-0" />
                                         </button>
