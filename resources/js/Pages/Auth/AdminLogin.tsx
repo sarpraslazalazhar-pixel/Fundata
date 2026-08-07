@@ -3,7 +3,7 @@ import React, { FormEventHandler, useState } from 'react';
 
 export default function AdminLogin() {
  const { appConfig } = usePage<any>().props;
- const { data, setData, post, processing, errors } = useForm({
+ const { data, setData, post, processing, errors, reset } = useForm({
  username: '',
  password: '',
  remember: false,
@@ -13,7 +13,9 @@ export default function AdminLogin() {
 
  const submit: FormEventHandler = (e) => {
  e.preventDefault();
- post('/admin/login');
+ post('/admin/login', {
+ onError: () => reset('password'),
+ });
  };
 
  return (

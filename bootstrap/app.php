@@ -43,4 +43,14 @@ return Application::configure(basePath: dirname(__DIR__))
         $exceptions->shouldRenderJsonWhen(
             fn (Request $request) => $request->is('api/*'),
         );
+        
+        // ponytail: automatically handle 419 token expiration for Inertia to prevent silent login failures
+        $exceptions->respond(function (\Symfony\Component\HttpFoundation\Response $response, \Throwable $exception, Request $request) {
+            if ($response->getStatusCode() === 419 && $request->header('X-Inertia')) {
+                return back()->with([
+                    'error' => 'Sesi telah habis, silakan coba lagi.',
+                ]);
+            }
+            return $response;
+        });
     })->create();

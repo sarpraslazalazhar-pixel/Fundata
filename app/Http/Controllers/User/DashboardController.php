@@ -20,8 +20,9 @@ class DashboardController extends Controller
         
         $period = $request->input('period', 'bulan_ini');
 
-        $query = Record::query();
-        $queryLeaderboard = Record::query();
+        // ponytail: prevent global eager loads from triggering useless queries
+        $query = Record::withoutEagerLoads();
+        $queryLeaderboard = Record::withoutEagerLoads();
         
         $now = Carbon::now();
         $startDate = null;
@@ -46,9 +47,8 @@ class DashboardController extends Controller
         }
 
         // --- Metrik Pribadi ---
-        $personalRecords = (clone $query)->where('user_id', $userId)->get();
-        $totalDonasi = $personalRecords->sum('jumlah_donasi');
-        $totalData = $personalRecords->count();
+        $totalDonasi = (clone $query)->where('user_id', $userId)->sum('jumlah_donasi') ?? 0;
+        $totalData = (clone $query)->where('user_id', $userId)->count();
 
         // --- Leaderboard Cabang ---
         $leaderboard = [];
@@ -132,11 +132,13 @@ class DashboardController extends Controller
         ];
 
         // ── Campaign Progress ──
-        $campaigns = Campaign::where('is_active', true)->orderBy('nama_campaign')->get();
+        // ponytail: avoid N+1 by using withSum
+        $campaigns = Campaign::withSum(['records as terkumpul' => function($q) {
+            $q->whereNotIn('status', ['reject', 'dibatalkan']);
+        }], 'jumlah_donasi')->where('is_active', true)->orderBy('nama_campaign')->get();
+        
         $campaignProgress = $campaigns->map(function($campaign) {
-            $terkumpul = Record::where('campaign_id', $campaign->id)
-                ->whereNotIn('status', ['reject', 'dibatalkan'])
-                ->sum('jumlah_donasi') ?? 0;
+            $terkumpul = $campaign->terkumpul ?? 0;
             return [
                 'id' => $campaign->id,
                 'nama_campaign' => $campaign->nama_campaign,
@@ -152,15 +154,16 @@ class DashboardController extends Controller
 
         // ── Akad Progress ──
         if (\Illuminate\Support\Facades\Schema::hasColumn('akads', 'is_show_on_dashboard')) {
-            $akads = \App\Models\Akad::where('is_show_on_dashboard', true)->orderBy('nama_akad')->get();
+            // ponytail: avoid N+1 by using withSum
+            $akads = \App\Models\Akad::withSum(['records as terkumpul' => function($q) {
+                $q->whereNotIn('status', ['reject', 'dibatalkan']);
+            }], 'jumlah_donasi')->where('is_show_on_dashboard', true)->orderBy('nama_akad')->get();
         } else {
             $akads = collect();
         }
 
         $akadProgress = $akads->map(function($akad) {
-            $terkumpul = Record::where('akad_id', $akad->id)
-                ->whereNotIn('status', ['reject', 'dibatalkan'])
-                ->sum('jumlah_donasi') ?? 0;
+            $terkumpul = $akad->terkumpul ?? 0;
             return [
                 'id' => $akad->id,
                 'nama_akad' => $akad->nama_akad,

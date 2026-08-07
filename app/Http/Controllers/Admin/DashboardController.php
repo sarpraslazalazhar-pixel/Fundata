@@ -16,7 +16,8 @@ class DashboardController extends Controller
         $month = $request->input('month', date('n'));
         $year = $request->input('year', date('Y'));
 
-        $baseQuery = Record::query();
+        // ponytail: prevent global eager loads from triggering useless queries on aggregates
+        $baseQuery = Record::withoutEagerLoads();
         if ($year) $baseQuery->whereYear('created_at', $year);
         if ($month) $baseQuery->whereMonth('created_at', $month);
 
@@ -52,23 +53,25 @@ class DashboardController extends Controller
 
         $distribusiMetode = collect();
         if (!empty($metodeFieldIds)) {
-            $metodeRaw = (clone $validBase)
-                ->select(['id', 'form_data', 'jumlah_donasi'])
+            // ponytail: extract JSON dynamically in DB to avoid massive PHP memory usage
+            $jsonExtracts = array_map(function($fid) {
+                return 'JSON_UNQUOTE(JSON_EXTRACT(form_data, \'$."' . $fid . '"\'))';
+            }, $metodeFieldIds);
+            
+            $coalesceExpr = 'COALESCE(' . implode(', ', $jsonExtracts) . ')';
+            
+            $metodeRaw = clone $validBase;
+            $aggregated = $metodeRaw
+                ->select(\Illuminate\Support\Facades\DB::raw("{$coalesceExpr} as metode_id"), \Illuminate\Support\Facades\DB::raw('SUM(jumlah_donasi) as total_donasi'))
+                ->whereRaw("{$coalesceExpr} IS NOT NULL")
+                ->groupBy('metode_id')
                 ->get();
 
-            foreach ($metodeRaw as $row) {
-                $formData = is_string($row->form_data) ? json_decode($row->form_data, true) : $row->form_data;
-                if (!is_array($formData)) continue;
-
-                foreach ($metodeFieldIds as $fid) {
-                    if (isset($formData[$fid]) && $formData[$fid] !== null && $formData[$fid] !== '') {
-                        $mid = $formData[$fid];
-                        if (isset($paymentMethodMap[$mid])) {
-                            $name = $paymentMethodMap[$mid]->nama_bank;
-                            $distribusiMetode[$name] = ($distribusiMetode[$name] ?? 0) + (float) $row->jumlah_donasi;
-                        }
-                        break;
-                    }
+            foreach ($aggregated as $row) {
+                $mid = $row->metode_id;
+                if (isset($paymentMethodMap[$mid])) {
+                    $name = $paymentMethodMap[$mid]->nama_bank;
+                    $distribusiMetode[$name] = ($distribusiMetode[$name] ?? 0) + (float) $row->total_donasi;
                 }
             }
         }
@@ -168,11 +171,13 @@ class DashboardController extends Controller
             ];
         })->sortByDesc('total_donasi')->values();
 
-        $campaigns = Campaign::where('is_active', true)->orderBy('nama_campaign')->get();
+        // ponytail: avoid N+1 by using withSum
+        $campaigns = Campaign::withSum(['records as terkumpul' => function($q) {
+            $q->whereNotIn('status', ['reject', 'dibatalkan']);
+        }], 'jumlah_donasi')->where('is_active', true)->orderBy('nama_campaign')->get();
+        
         $campaignProgress = $campaigns->map(function ($campaign) {
-            $terkumpul = Record::where('campaign_id', $campaign->id)
-                ->whereNotIn('status', ['reject', 'dibatalkan'])
-                ->sum('jumlah_donasi') ?? 0;
+            $terkumpul = $campaign->terkumpul ?? 0;
             return [
                 'id' => $campaign->id,
                 'nama_campaign' => $campaign->nama_campaign,
@@ -189,15 +194,16 @@ class DashboardController extends Controller
 
         // ── Akad Progress ──
         if (\Illuminate\Support\Facades\Schema::hasColumn('akads', 'is_show_on_dashboard')) {
-            $akads = \App\Models\Akad::where('is_show_on_dashboard', true)->orderBy('nama_akad')->get();
+            // ponytail: avoid N+1 by using withSum
+            $akads = \App\Models\Akad::withSum(['records as terkumpul' => function($q) {
+                $q->whereNotIn('status', ['reject', 'dibatalkan']);
+            }], 'jumlah_donasi')->where('is_show_on_dashboard', true)->orderBy('nama_akad')->get();
         } else {
             $akads = collect();
         }
 
         $akadProgress = $akads->map(function ($akad) {
-            $terkumpul = Record::where('akad_id', $akad->id)
-                ->whereNotIn('status', ['reject', 'dibatalkan'])
-                ->sum('jumlah_donasi') ?? 0;
+            $terkumpul = $akad->terkumpul ?? 0;
             return [
                 'id' => $akad->id,
                 'nama_akad' => $akad->nama_akad,
@@ -257,7 +263,8 @@ class DashboardController extends Controller
         if ($year) $query->whereYear('tickets.created_at', $year);
         if ($month) $query->whereMonth('tickets.created_at', $month);
 
-        $records = $query->get();
+        // ponytail: lazy fix for OOM on dashboard by using LazyCollection
+        $records = $query->cursor();
 
         // Cari ID field yang berhubungan dengan donatur untuk fallback data lama
         $donaturFieldIds = \App\Models\FormField::where('tipe_field', 'donatur_lookup')

@@ -18,14 +18,15 @@ class TvDashboardController extends Controller
 
         // Statistik Hari Ini
         $stats = [
-            'total_hari_ini' => Ticket::whereDate('created_at', $today)->count(),
-            'menunggu' => Ticket::where('status', 'open')->count(),
-            'diproses' => Ticket::where('status', 'on_proses')->count(),
-            'selesai' => Ticket::whereDate('updated_at', $today)->whereIn('status', ['solve', 'close'])->count(),
+            'total_hari_ini' => Record::whereDate('created_at', $today)->count(),
+            'menunggu' => Record::where('status', 'open')->count(),
+            'diproses' => Record::where('status', 'on_proses')->count(),
+            'selesai' => Record::whereDate('updated_at', $today)->whereIn('status', ['solve', 'close'])->count(),
         ];
 
         // Tiket Terbaru (Live Feed)
-        $recentTickets = Ticket::with(['subUnit:id,nama_layanan', 'user:id,name', 'unit:id,nama_unit'])
+        // ponytail: withoutEagerLoads() to prevent unused global relationships from loading
+        $recentTickets = Record::withoutEagerLoads()->with(['subUnit:id,nama_layanan', 'user:id,name', 'unit:id,nama_unit'])
             ->orderBy('created_at', 'desc')
             ->take(15)
             ->get();
@@ -40,7 +41,9 @@ class TvDashboardController extends Controller
 
         // ── Daily Chart (7 Hari Terakhir) ──
         $startDate = now()->subDays(6)->startOfDay();
-        $dailyRaw = Ticket::selectRaw('DATE(created_at) as date, unit_id, COUNT(*) as total')
+        // ponytail: withoutEagerLoads()
+        $dailyRaw = Record::withoutEagerLoads()
+            ->selectRaw('DATE(created_at) as date, unit_id, COUNT(*) as total')
             ->where('created_at', '>=', $startDate)
             ->groupBy('date', 'unit_id')
             ->get();

@@ -16,10 +16,9 @@ class Record extends Model
 
         static::creating(function ($model) {
             if (empty($model->{$model->getKeyName()})) {
-                do {
-                    $id = random_int(100000000, 999999999);
-                } while (self::where($model->getKeyName(), $id)->exists());
-                $model->{$model->getKeyName()} = $id;
+                // ponytail: eliminate exists() query with a highly unique time-based 9-digit integer
+                // Format: last 5 digits of timestamp + 4 random digits
+                $model->{$model->getKeyName()} = (int) (substr((string) time(), -5) . random_int(1000, 9999));
             }
         });
     }

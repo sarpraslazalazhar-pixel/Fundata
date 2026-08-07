@@ -131,7 +131,8 @@ class LogAuditController extends Controller
     {
         $this->applyFilters($query, $request);
 
-        $rows = $query->latest('created_at')->get()->map(function (Record $record) {
+        // ponytail: cursor mapping to avoid loading all models to memory
+        $rows = $query->latest('created_at')->cursor()->map(function (Record $record) {
             $t = $this->transform($record);
             return [
                 $t['created_at'] ? Carbon::parse($t['created_at'])->format('d/m/Y H:i') : '-',

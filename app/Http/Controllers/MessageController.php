@@ -155,11 +155,15 @@ class MessageController extends Controller
         }
 
         // Auto mark as read when fetching messages
-        $conversation->messages()
+        $updatedCount = $conversation->messages()
             ->where('sender_type', $receiverType)
             ->where('sender_id', $receiverId)
             ->where('is_read', false)
             ->update(['is_read' => true]);
+
+        if ($updatedCount > 0) {
+            broadcast(new \App\Events\MessagesRead($senderId, $senderType, $receiverId, $receiverType))->toOthers();
+        }
 
         $messages = $conversation->messages()->with('context')->get();
         return response()->json($messages);
@@ -188,11 +192,15 @@ class MessageController extends Controller
         })->first();
 
         if ($conversation) {
-            $conversation->messages()
+            $updatedCount = $conversation->messages()
                 ->where('sender_type', $receiverType)
                 ->where('sender_id', $receiverId)
                 ->where('is_read', false)
                 ->update(['is_read' => true]);
+
+            if ($updatedCount > 0) {
+                broadcast(new \App\Events\MessagesRead($senderId, $senderType, $receiverId, $receiverType))->toOthers();
+            }
         }
 
         return response()->json(['success' => true]);

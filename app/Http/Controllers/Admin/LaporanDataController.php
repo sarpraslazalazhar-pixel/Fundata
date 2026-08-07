@@ -239,14 +239,14 @@ class LaporanDataController extends Controller
         $baseQuery = Record::query()->with(['user.divisi', 'subUnit.unit', 'donatur', 'campaign']);
         $this->applyFilters($baseQuery, $request);
 
-        $records = $baseQuery->orderBy('tickets.created_at', 'desc')->get();
-
         $metodeFieldIds = FormField::where('tipe_field', 'metode_bayar')->pluck('id')->toArray();
         $paymentMethodMap = PaymentMethod::all()->keyBy('id');
 
         // Cari semua kunci dinamis dari form_data (kecuali field metode bayar)
+        // ponytail: use chunk() to avoid OOM on large exports
         $dynamicKeys = [];
-        foreach ($records as $record) {
+        (clone $baseQuery)->chunk(500, function ($records) use (&$dynamicKeys, $metodeFieldIds) {
+            foreach ($records as $record) {
             $formData = is_string($record->form_data) ? json_decode($record->form_data, true) : $record->form_data;
             if (is_array($formData)) {
                 foreach (array_keys($formData) as $key) {
@@ -255,7 +255,8 @@ class LaporanDataController extends Controller
                     }
                 }
             }
-        }
+            }
+        });
 
         $headers = array_merge([
             'Nomor Data',
@@ -270,12 +271,14 @@ class LaporanDataController extends Controller
             'Status'
         ], $dynamicKeys);
 
-        $callback = function () use ($records, $headers, $dynamicKeys, $metodeFieldIds, $paymentMethodMap) {
+        $callback = function () use ($baseQuery, $headers, $dynamicKeys, $metodeFieldIds, $paymentMethodMap) {
             $file = fopen('php://output', 'w');
             fprintf($file, chr(0xEF) . chr(0xBB) . chr(0xBF));
             fputcsv($file, $headers);
 
-            foreach ($records as $record) {
+            // ponytail: chunk loop for writing CSV
+            $baseQuery->orderBy('tickets.created_at', 'desc')->chunk(500, function ($records) use ($file, $dynamicKeys, $metodeFieldIds, $paymentMethodMap) {
+                foreach ($records as $record) {
                 $formData = is_string($record->form_data) ? json_decode($record->form_data, true) : $record->form_data;
                 if (!is_array($formData)) $formData = [];
 
@@ -303,7 +306,8 @@ class LaporanDataController extends Controller
                 }
 
                 fputcsv($file, $row);
-            }
+                }
+            });
             fclose($file);
         };
 

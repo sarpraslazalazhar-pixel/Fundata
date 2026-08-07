@@ -3,7 +3,7 @@ import { usePage, Head } from '@inertiajs/react';
 import axios from 'axios';
 import { format } from 'date-fns';
 import toast from 'react-hot-toast';
-import { Send, Search, Users, ChevronLeft, Paperclip, FileText, Download, X, Loader2, Link2, Bell } from 'lucide-react';
+import { Send, Search, Users, ChevronLeft, Paperclip, FileText, Download, X, Loader2, Link2, Bell, CheckCheck, Check } from 'lucide-react';
 import { Button } from '@/Components/ui/button';
 
 // Helper for date formatting in Indonesian
@@ -75,6 +75,7 @@ export default function ChatInterface({ guard }: { guard?: 'user' | 'admin' }) {
     const userModelType = isExplicitAdmin ? 'App\\Models\\Admin' : 'App\\Models\\User';
 
     const [contacts, setContacts] = useState<any[]>([]);
+    const [contactFilter, setContactFilter] = useState<'all' | 'unread'>('all');
     const [activeChat, setActiveChat] = useState<any | null>(null);
     const [messages, setMessages] = useState<any[]>([]);
     const [newMessage, setNewMessage] = useState('');
@@ -335,6 +336,14 @@ export default function ChatInterface({ guard }: { guard?: 'user' | 'admin' }) {
             });
         });
 
+        channel.listen('MessagesRead', (e: any) => {
+            const currentActive = activeChatRef.current;
+            if (currentActive && String(currentActive.id) === String(e.reader_id) && currentActive.model_type === e.reader_type) {
+                // The recipient read our sent messages -> turn sent messages to is_read = true!
+                setMessages(prev => prev.map(m => ({ ...m, is_read: true })));
+            }
+        });
+
         return () => {
             (window as any).Echo.leave(channelName);
         };
@@ -382,6 +391,7 @@ export default function ChatInterface({ guard }: { guard?: 'user' | 'admin' }) {
             sender_id: user.id,
             sender_type: userModelType,
             body: text,
+            is_read: false,
             created_at: new Date().toISOString(),
             context_type: currentContext?.model_type || null,
             context_id: currentContext?.id || null,
@@ -450,7 +460,11 @@ export default function ChatInterface({ guard }: { guard?: 'user' | 'admin' }) {
         }
     };
 
-    const filteredContacts = contacts.filter(c => (c.name || c.username || 'Unknown').toLowerCase().includes(search.toLowerCase()));
+    const totalUnreadCount = contacts.reduce((acc, c) => acc + (c.unread_count || 0), 0);
+
+    const filteredContacts = contacts
+        .filter(c => (c.name || c.username || 'Unknown').toLowerCase().includes(search.toLowerCase()))
+        .filter(c => contactFilter === 'all' || (c.unread_count || 0) > 0);
 
     return (
         <div className="flex h-[calc(100vh-140px)] md:h-[calc(100vh-100px)] border rounded-2xl bg-white overflow-hidden shadow-sm relative">
@@ -499,8 +513,8 @@ export default function ChatInterface({ guard }: { guard?: 'user' | 'admin' }) {
             {/* Sidebar Kiri - Daftar Kontak */}
             <div className={`w-full md:w-[350px] flex-shrink-0 flex flex-col border-r bg-slate-50/50 ${activeChat ? 'hidden md:flex' : 'flex'}`}>
                 <div className="p-4 border-b bg-white">
-                    <h2 className="font-bold text-xl mb-4">Pesan</h2>
-                    <div className="relative">
+                    <h2 className="font-bold text-xl mb-3">Pesan</h2>
+                    <div className="relative mb-3">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         <input
                             type="text"
@@ -509,6 +523,29 @@ export default function ChatInterface({ guard }: { guard?: 'user' | 'admin' }) {
                             onChange={(e) => setSearch(e.target.value)}
                             className="w-full pl-9 pr-4 py-2 bg-slate-100 border-transparent rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
                         />
+                    </div>
+
+                    {/* Filter Tabs (Semua & Belum Dibaca) */}
+                    <div className="flex items-center gap-1 p-1 bg-slate-100/90 rounded-xl text-xs font-semibold">
+                        <button
+                            type="button"
+                            onClick={() => setContactFilter('all')}
+                            className={`flex-1 py-1.5 px-3 rounded-lg transition-all text-center ${contactFilter === 'all' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-800'}`}
+                        >
+                            Semua
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setContactFilter('unread')}
+                            className={`flex-1 py-1.5 px-3 rounded-lg transition-all text-center flex items-center justify-center gap-1.5 ${contactFilter === 'unread' ? 'bg-white text-primary shadow-xs' : 'text-slate-500 hover:text-slate-800'}`}
+                        >
+                            <span>Belum Dibaca</span>
+                            {totalUnreadCount > 0 && (
+                                <span className="bg-primary text-primary-foreground text-[10px] font-bold px-1.5 py-0.2 rounded-full">
+                                    {totalUnreadCount > 99 ? '99+' : totalUnreadCount}
+                                </span>
+                            )}
+                        </button>
                     </div>
                 </div>
 
@@ -521,7 +558,7 @@ export default function ChatInterface({ guard }: { guard?: 'user' | 'admin' }) {
                     ) : filteredContacts.length === 0 ? (
                         <div className="p-4 text-center text-sm text-muted-foreground flex flex-col items-center gap-2 py-10">
                             <Users className="h-8 w-8 text-slate-300" />
-                            <p>Tidak ada kontak ditemukan.</p>
+                            <p>{contactFilter === 'unread' ? 'Tidak ada pesan belum dibaca.' : 'Tidak ada kontak ditemukan.'}</p>
                         </div>
                     ) : (
                         <div className="flex flex-col gap-1">
@@ -676,9 +713,18 @@ export default function ChatInterface({ guard }: { guard?: 'user' | 'admin' }) {
                                                     )}
                                                     {msg.body && <div>{msg.body}</div>}
                                                 </div>
-                                                <span className="text-[10px] text-slate-500 mx-2 font-medium">
-                                                    {msg.created_at ? format(new Date(msg.created_at), 'HH:mm') : ''}
-                                                </span>
+                                                <div className="flex items-center gap-1.5 mx-2 font-medium">
+                                                    <span className="text-[10px] text-slate-500">
+                                                        {msg.created_at ? format(new Date(msg.created_at), 'HH:mm') : ''}
+                                                    </span>
+                                                    {isMe && (
+                                                        msg.is_read ? (
+                                                            <CheckCheck className="h-3.5 w-3.5 text-sky-500 shrink-0" title="Sudah dibaca" />
+                                                        ) : (
+                                                            <CheckCheck className="h-3.5 w-3.5 text-slate-400 shrink-0" title="Terkirim (Belum dibaca)" />
+                                                        )
+                                                    )}
+                                                </div>
                                             </div>
                                         </React.Fragment>
                                     );

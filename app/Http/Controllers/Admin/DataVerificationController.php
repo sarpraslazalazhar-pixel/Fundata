@@ -199,33 +199,37 @@ class DataVerificationController extends Controller
             }
         }
 
-        // Notifikasi WA (User)
-        try {
-            $record->load('user', 'subUnit');
-            if ($record->user) {
-                $record->user->notify(new TicketStatusUpdatedNotification($record, $request->catatan));
-                
-                if (!empty($request->catatan)) {
-                    $senderName = auth('admin')->user()->name ?? auth('admin')->user()->username;
-                    $url = route('data.show', $record->id);
-                    $record->user->notify(new \App\Notifications\TicketCommentPushNotification($record, $senderName, $request->catatan, $url));
+        // ponytail: defer user notifications to run after response without queue worker
+        defer(function () use ($record, $request) {
+            try {
+                $record->load('user', 'subUnit');
+                if ($record->user) {
+                    $record->user->notify(new TicketStatusUpdatedNotification($record, $request->catatan));
+                    
+                    if (!empty($request->catatan)) {
+                        $senderName = auth('admin')->user()->name ?? auth('admin')->user()->username;
+                        $url = route('data.show', $record->id);
+                        $record->user->notify(new \App\Notifications\TicketCommentPushNotification($record, $senderName, $request->catatan, $url));
+                    }
                 }
+            } catch (\Exception $e) {
+                \Log::error("Gagal mengirim notifikasi status update tiket #{$record->id}: " . $e->getMessage());
             }
-        } catch (\Exception $e) {
-            \Log::error("Gagal mengirim notifikasi status update tiket #{$record->id}: " . $e->getMessage());
-        }
+        });
 
-        // Notifikasi ke Operator (jika ada dan yang merubah bukan dia sendiri)
-        try {
-            $record->load('assignedAdmin');
-            $currentAdminId = auth('admin')->id();
-            if ($record->assignedAdmin && $record->assignedAdmin->id !== $currentAdminId) {
-                $pengubahName = auth('admin')->user()->name ?? auth('admin')->user()->username;
-                $record->assignedAdmin->notify(new \App\Notifications\TicketStatusUpdatedOperatorNotification($record, $request->catatan, $pengubahName));
+        // ponytail: defer operator notifications
+        defer(function () use ($record, $request) {
+            try {
+                $record->load('assignedAdmin');
+                $currentAdminId = auth('admin')->id();
+                if ($record->assignedAdmin && $record->assignedAdmin->id !== $currentAdminId) {
+                    $pengubahName = auth('admin')->user()->name ?? auth('admin')->user()->username;
+                    $record->assignedAdmin->notify(new \App\Notifications\TicketStatusUpdatedOperatorNotification($record, $request->catatan, $pengubahName));
+                }
+            } catch (\Exception $e) {
+                \Log::error("Gagal mengirim notifikasi operator tiket #{$record->id}: " . $e->getMessage());
             }
-        } catch (\Exception $e) {
-            \Log::error("Gagal mengirim notifikasi operator tiket #{$record->id}: " . $e->getMessage());
-        }
+        });
 
         return redirect()->back()->with('success', 'Status tiket berhasil diubah.');
     }
