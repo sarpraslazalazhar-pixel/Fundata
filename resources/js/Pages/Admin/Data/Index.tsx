@@ -7,7 +7,7 @@ import SlaBadge from '@/Components/SlaBadge';
 import { Pagination } from '@/Components/Pagination';
 import { Button } from '@/Components/ui/button';
 import { DateRangePicker } from '@/Components/ui/date-range-picker';
-import { Eye, Filter } from 'lucide-react';
+import { Eye, Filter, ExternalLink } from 'lucide-react';
 import { formatTicketId } from '@/lib/utils';
 
 const STATUS_LIST = [
@@ -28,6 +28,9 @@ interface Ticket {
  jumlah_donasi?: number;
  status: string;
  created_at: string;
+ link_kwitansi?: string;
+ nomor_kwitansi?: string;
+ is_result_accepted?: boolean;
 }
 
 export default function DataIndex({ records, filters, units, divisiList, orgUnitList }: any) {
@@ -110,6 +113,21 @@ export default function DataIndex({ records, filters, units, divisiList, orgUnit
  { key: 'donatur', header: 'Nama Donatur', render: (t: Ticket) => t.donatur?.nama_lengkap || '-' },
  { key: 'donasi', header: 'Donasi (Rp)', render: (t: Ticket) => t.jumlah_donasi ? new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(Number(t.jumlah_donasi)) : '-' },
  { key: 'status', header: 'Status', render: (t: Ticket) => <StatusBadge status={t.status} /> },
+ {
+ key: 'kwitansi',
+ header: 'Kwitansi',
+ render: (t: Ticket) => {
+   if ((t.status === 'solve' || t.is_result_accepted) && t.link_kwitansi) {
+     return (
+       <a href={t.link_kwitansi} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-blue-50 text-blue-700 text-xs font-medium rounded border border-blue-200 hover:bg-blue-100 transition-colors whitespace-nowrap">
+         <ExternalLink className="w-3.5 h-3.5" />
+         {t.nomor_kwitansi || 'Lihat Kwitansi'}
+       </a>
+     );
+   }
+   return '-';
+ }
+ },
  {
  key: 'aksi',
  header: 'Aksi',

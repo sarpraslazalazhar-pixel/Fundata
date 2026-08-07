@@ -8,7 +8,7 @@ import { TicketTimeline } from '@/Components/TicketTimeline';
 import { TicketAttachmentList } from '@/Components/TicketAttachmentList';
 import { formatDateId, formatTicketId } from '@/lib/utils';
 import { AttachmentViewer } from '@/Components/AttachmentViewer';
-import { FileText, ArrowLeft, AlertTriangle, CheckCircle2, XCircle, Download, Eye, Edit2, MessageSquareShare } from 'lucide-react';
+import { FileText, ArrowLeft, AlertTriangle, CheckCircle2, XCircle, Download, Eye, Edit2, MessageSquareShare, ExternalLink } from 'lucide-react';
 import ImageEditorModal from '@/Components/FormBuilder/ImageEditorModal';
 import ShareToChatModal from '@/Components/Chat/ShareToChatModal';
 
@@ -31,7 +31,7 @@ export default function TicketDetail({ ticket, formFields, operators, akads, pay
  const [shareOpen, setShareOpen] = useState(false);
  const [fileToEdit, setFileToEdit] = useState<{file: File, index: number, form: 'admin'} | null>(null);
 
- const { data: statusData, setData: setStatusData, post: postStatus, processing: processingStatus, errors: errorsStatus, reset: resetStatus } = useForm({ status: '', catatan: '', general_attachments: [] as File[], _method: 'patch' });
+ const { data: statusData, setData: setStatusData, post: postStatus, processing: processingStatus, errors: errorsStatus, reset: resetStatus } = useForm({ status: '', catatan: '', link_kwitansi: '', nomor_kwitansi: '', general_attachments: [] as File[], _method: 'patch' });
  const { data: assignData, setData: setAssignData, patch: patchAssign, processing: processingAssign, errors: errorsAssign } = useForm({ assigned_admin_id: ticket.assigned_admin_id || '' });
 
  const transitions = validTransitions[ticket.status] || [];
@@ -151,6 +151,17 @@ export default function TicketDetail({ ticket, formFields, operators, akads, pay
  {ticket.campaign && (
  <div className="col-span-2"><span className="text-sm text-slate-500">Campaign / Program</span><p className="font-medium text-blue-700">{ticket.campaign.nama_campaign}</p></div>
  )}
+ {ticket.link_kwitansi && (
+  <div className="col-span-2">
+    <span className="text-sm text-slate-500">Kwitansi</span>
+    <div>
+      <a href={ticket.link_kwitansi} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 px-3 py-1.5 mt-1 bg-blue-50 text-blue-700 text-sm font-medium rounded border border-blue-200 hover:bg-blue-100 transition-colors">
+        <ExternalLink className="w-4 h-4" />
+        {ticket.nomor_kwitansi || 'Lihat Kwitansi'}
+      </a>
+    </div>
+  </div>
+  )}
  </div>
  {formFields?.map((field: any) => (
  <div key={field.id}>
@@ -175,14 +186,7 @@ export default function TicketDetail({ ticket, formFields, operators, akads, pay
   </Card>
   )}
 
- {ticket.attachments?.length > 0 && (
- <Card>
- <CardHeader><CardTitle className="flex items-center gap-2"><FileText className="w-5 h-5" /> Lampiran</CardTitle></CardHeader>
- <CardContent>
- <TicketAttachmentList attachments={ticket.attachments} downloadRoute="admin.data.download" />
- </CardContent>
- </Card>
- )}
+
 
  {ticket.logs?.length > 0 && (
  <Card>
@@ -242,6 +246,20 @@ export default function TicketDetail({ ticket, formFields, operators, akads, pay
  </select>
  {errorsStatus.status && <p className="text-red-500 text-sm">{errorsStatus.status}</p>}
  </div>
+ {statusData.status === 'solve' && (
+   <>
+     <div className="space-y-2">
+       <label className="text-sm font-medium">Link Kwitansi <span className="text-red-500">*</span></label>
+       <input type="url" className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm" value={statusData.link_kwitansi} onChange={e => setStatusData('link_kwitansi', e.target.value)} placeholder="https://..." required />
+       {errorsStatus.link_kwitansi && <p className="text-red-500 text-sm">{errorsStatus.link_kwitansi}</p>}
+     </div>
+     <div className="space-y-2">
+       <label className="text-sm font-medium">Nomor Kwitansi (Opsional)</label>
+       <input type="text" className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm" value={statusData.nomor_kwitansi} onChange={e => setStatusData('nomor_kwitansi', e.target.value)} placeholder="Misal: KW-2026-08..." />
+       {errorsStatus.nomor_kwitansi && <p className="text-red-500 text-sm">{errorsStatus.nomor_kwitansi}</p>}
+     </div>
+   </>
+ )}
  <div className="space-y-2">
  <label className="text-sm font-medium">Catatan Admin <span className="text-red-500">*</span></label>
  <textarea className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm min-h-[100px]" value={statusData.catatan} onChange={e => setStatusData('catatan', e.target.value)} placeholder="Wajib diisi..." />

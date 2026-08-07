@@ -27,6 +27,21 @@ const columns = [
  { key: 'status', header: 'Status', render: (t: any) => <StatusBadge status={t.status} /> },
  { key: 'created_at', header: 'Tanggal', render: (t: any) => new Date(t.created_at).toLocaleDateString() },
  {
+ key: 'kwitansi',
+ header: 'Kwitansi',
+ render: (t: any) => {
+   if ((t.status === 'solve' || t.is_result_accepted) && t.link_kwitansi) {
+     return (
+       <a href={t.link_kwitansi} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-blue-50 text-blue-700 text-xs font-medium rounded border border-blue-200 hover:bg-blue-100 transition-colors whitespace-nowrap">
+         <ExternalLink className="w-3.5 h-3.5" />
+         {t.nomor_kwitansi || 'Lihat Kwitansi'}
+       </a>
+     );
+   }
+   return '-';
+ }
+ },
+ {
  key: 'aksi',
  header: 'Aksi',
  render: (t: any) => (

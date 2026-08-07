@@ -8,6 +8,9 @@
 - [x] database akad/layanan (ada infak, zakat, campaign, wakaf dan DSKL)
 - [x] nominal di filter semua data
 - [x] Log audit kontributor per campaign & akad (siapa saja yang input data, filter status/tanggal/user, ekspor Excel)
+- [ ] tombol preview di halaman tinjau
+- [ ] tambahkan Nomer kwitansi saat selesai
+- [ ] info pin tiket pad tiket
 
 
 

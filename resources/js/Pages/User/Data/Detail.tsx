@@ -24,13 +24,12 @@ interface DetailProps {
 }
 
 export default function Detail({ ticket, formFields, maxRevisions, akads, paymentMethods }: DetailProps) {
- const { data: replyData, setData: setReplyData, post: postReply, processing: processingReply, errors: errorsReply, reset: resetReply } = useForm({ catatan: '', general_attachments: [] as File[], _method: 'post' });
  const { data: revData, setData: setRevData, post: postRev, processing: processingRev, errors: errorsRev, reset: resetRev } = useForm({ catatan: '', general_attachments: [] as File[], _method: 'post' });
  const [showRevForm, setShowRevForm] = useState(false);
  const [showConfirm, setShowConfirm] = useState(false);
  const [editorOpen, setEditorOpen] = useState(false);
  const [shareOpen, setShareOpen] = useState(false);
- const [fileToEdit, setFileToEdit] = useState<{file: File, index: number, form: 'reply' | 'rev'} | null>(null);
+ const [fileToEdit, setFileToEdit] = useState<{file: File, index: number, form: 'rev'} | null>(null);
 
  const canCancel = ticket.status === 'open';
 
@@ -307,19 +306,7 @@ export default function Detail({ ticket, formFields, maxRevisions, akads, paymen
  </CardContent>
  </Card>
 
- {ticket.attachments?.length > 0 && (
- <Card className="md:col-span-2">
- <CardHeader>
- <CardTitle className="flex items-center gap-2">
- <FileText className="h-5 w-5" />
- Lampiran
- </CardTitle>
- </CardHeader>
- <CardContent>
- <TicketAttachmentList attachments={ticket.attachments} downloadRoute="data.download" />
- </CardContent>
- </Card>
- )}
+
 
  {ticket.logs?.length > 0 && (
  <Card className="md:col-span-2">
@@ -335,65 +322,7 @@ export default function Detail({ ticket, formFields, maxRevisions, akads, paymen
  </Card>
  )}
 
- {ticket.status !== 'solve' && ticket.status !== 'reject' && ticket.status !== 'dibatalkan' && ticket.status !== 'waiting_approval' && (
- <Card className="md:col-span-2">
- <CardHeader>
- <CardTitle>Balas Tiket</CardTitle>
- </CardHeader>
- <CardContent>
- <form onSubmit={(e) => {
- e.preventDefault();
- postReply(route('data.reply', ticket.id), { onSuccess: () => resetReply() });
- }} className="space-y-4">
- <div className="space-y-2">
- <label className="text-sm font-medium">Catatan <span className="text-red-500">*</span></label>
- <textarea className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm min-h-[100px]" value={replyData.catatan} onChange={e => setReplyData('catatan', e.target.value)} placeholder="Tulis balasan Anda di sini..." required />
- {errorsReply.catatan && <p className="text-red-500 text-sm">{errorsReply.catatan}</p>}
- </div>
- <div className="space-y-2">
- <label className="text-sm font-medium">Lampiran Tambahan (Opsional)</label>
- <p className="text-xs text-slate-500">Maks. 3 file, 3MB/file (JPG, PNG, PDF, DOC, DOCX).</p>
- <input
- type="file"
- multiple
- accept=".jpg,.jpeg,.png,.pdf,.doc,.docx"
- className="w-full text-sm file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
- onChange={e => {
- const files = Array.from(e.target.files || []);
- if (replyData.general_attachments.length + files.length > 3) {
- alert('Maksimal hanya 3 lampiran.');
- return;
- }
- const validFiles = files.filter(f => {
- if (f.size > 3 * 1024 * 1024) { alert(`${f.name} melebihi 3MB.`); return false; }
- return true;
- });
- setReplyData('general_attachments', [...replyData.general_attachments, ...validFiles]);
- e.target.value = '';
- }}
- />
- {errorsReply.general_attachments && <p className="text-red-500 text-sm">{errorsReply.general_attachments}</p>}
- {replyData.general_attachments.length > 0 && (
- <div className="mt-2 space-y-2">
- {replyData.general_attachments.map((file, idx) => (
- <div key={idx} className="flex justify-between items-center text-sm p-2 bg-slate-50 border rounded">
- <span className="truncate max-w-[200px]">{file.name}</span>
- <div className="flex items-center gap-3">
- {file.type.startsWith('image/') && (
- <button type="button" onClick={() => { setFileToEdit({file, index: idx, form: 'reply'}); setEditorOpen(true); }} className="text-blue-600 hover:underline flex items-center gap-1"><Edit2 className="w-4 h-4"/> Edit</button>
- )}
- <button type="button" onClick={() => setReplyData('general_attachments', replyData.general_attachments.filter((_, i) => i !== idx))} className="text-red-500 hover:underline">Hapus</button>
- </div>
- </div>
- ))}
- </div>
- )}
- </div>
- <Button type="submit" disabled={processingReply}>Kirim Balasan</Button>
- </form>
- </CardContent>
- </Card>
- )}
+ 
  </div>
  </div>
  
@@ -403,11 +332,7 @@ export default function Detail({ ticket, formFields, maxRevisions, akads, paymen
  onClose={() => setEditorOpen(false)}
  imageFile={fileToEdit.file}
  onSave={(editedFile) => {
- if (fileToEdit.form === 'reply') {
- const newFiles = [...replyData.general_attachments];
- newFiles[fileToEdit.index] = editedFile;
- setReplyData('general_attachments', newFiles);
- } else if (fileToEdit.form === 'rev') {
+ if (fileToEdit.form === 'rev') {
  const newFiles = [...revData.general_attachments];
  newFiles[fileToEdit.index] = editedFile;
  setRevData('general_attachments', newFiles);

@@ -27,7 +27,7 @@ class Record extends Model
         'user_id', 'divisi_id', 'org_unit_id', 'jabatan_id',
         'unit_id', 'sub_unit_id', 'campaign_id', 'akad_id',
         'donatur_id', 'jumlah_donasi', 'form_data', 'status', 'priority', 'assigned_admin_id',
-        'revision_count', 'waiting_approval_at', 'is_result_accepted'
+        'revision_count', 'waiting_approval_at', 'is_result_accepted', 'link_kwitansi', 'nomor_kwitansi'
     ];
 
     protected $appends = ['formatted_id', 'judul', 'sub_unit_nama', 'donatur_nama'];

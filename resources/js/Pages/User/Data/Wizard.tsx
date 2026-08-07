@@ -12,7 +12,8 @@ import DynamicField from '@/Components/DynamicForm/DynamicField';
 import axios from 'axios';
 import { FormField as FormFieldType } from '@/types';
 import { FileDropzone } from '@/Components/FileDropzone';
-import { Trash2, FileText, CheckCircle2, AlertCircle, Info } from 'lucide-react';
+import { Trash2, FileText, CheckCircle2, AlertCircle, Info, Eye } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/Components/ui/dialog';
 import Swal from 'sweetalert2';
 
 const STEPS = [
@@ -43,6 +44,7 @@ export default function DataWizard({ unitList, campaigns = [], paymentMethods = 
   const [formFields, setFormFields] = useState<FormFieldType[]>([]);
   const [fieldsLoading, setFieldsLoading] = useState(false);
   const [canSubmit, setCanSubmit] = useState(false);
+  const [previewFile, setPreviewFile] = useState<File | null>(null);
 
   const { data, setData, post, transform, processing, errors, setError, clearErrors } = useForm({
     unit_id: '',
@@ -84,8 +86,10 @@ export default function DataWizard({ unitList, campaigns = [], paymentMethods = 
   useEffect(() => {
     if (activeStep === STEPS.length - 1) {
       setCanSubmit(false);
-      const timer = setTimeout(() => setCanSubmit(true), 1000);
+      const timer = setTimeout(() => setCanSubmit(true), 1500);
       return () => clearTimeout(timer);
+    } else {
+      setCanSubmit(false);
     }
   }, [activeStep]);
 
@@ -188,6 +192,7 @@ export default function DataWizard({ unitList, campaigns = [], paymentMethods = 
     if (fieldsLoading) return;
     if (validateStep(activeStep)) {
       setDirection(1);
+      setCanSubmit(false);
       setActiveStep(prev => Math.min(prev + 1, STEPS.length - 1));
     } else {
       Swal.fire({
@@ -202,6 +207,7 @@ export default function DataWizard({ unitList, campaigns = [], paymentMethods = 
   const prevStep = () => {
     clearErrors();
     setDirection(-1);
+    setCanSubmit(false);
     setActiveStep(prev => Math.max(prev - 1, 0));
   };
 
@@ -233,9 +239,11 @@ export default function DataWizard({ unitList, campaigns = [], paymentMethods = 
 
   function ReviewRow({ label, value }: { label: string; value: React.ReactNode }) {
     return (
-      <div className="flex justify-between">
-        <span className="text-slate-500">{label}</span>
-        <span className="font-medium text-right max-w-[60%] truncate">{value}</span>
+      <div className="flex justify-between gap-4">
+        <span className="text-slate-500 shrink-0">{label}</span>
+        <div className={`font-medium text-right min-w-0 ${typeof value === 'string' || typeof value === 'number' ? 'truncate' : ''}`}>
+          {value}
+        </div>
       </div>
     );
   }
@@ -443,9 +451,23 @@ export default function DataWizard({ unitList, campaigns = [], paymentMethods = 
                                 <ReviewRow 
                                   key={field.id} 
                                   label={field.label} 
-                                  value={files.length > 0 
-                                    ? files.map(f => f.name).join(', ') 
-                                    : <span className="text-red-400">Belum diunggah</span>} 
+                                  value={files.length > 0 ? (
+                                    <div className="flex flex-col gap-2 items-end">
+                                      {files.map((f, idx) => (
+                                        <div key={idx} className="flex items-center gap-2 bg-slate-50/50 px-2 py-1 rounded border border-slate-100">
+                                          <span className="truncate max-w-[150px] sm:max-w-[200px] text-sm" title={f.name}>{f.name}</span>
+                                          <button 
+                                            type="button" 
+                                            onClick={() => setPreviewFile(f)}
+                                            className="text-slate-400 hover:text-blue-500 transition-colors"
+                                            title="Lihat Preview"
+                                          >
+                                            <Eye className="w-4 h-4" />
+                                          </button>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  ) : <span className="text-red-400">Belum diunggah</span>}
                                 />
                               );
                             })}
@@ -499,6 +521,39 @@ export default function DataWizard({ unitList, campaigns = [], paymentMethods = 
             </form>
           </CardContent>
         </Card>
+
+        {/* Preview Dialog */}
+        <Dialog open={!!previewFile} onOpenChange={(open: boolean) => !open && setPreviewFile(null)}>
+          <DialogContent className="sm:max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Preview Lampiran</DialogTitle>
+              <DialogDescription className="truncate">
+                {previewFile?.name}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="flex justify-center items-center p-4 bg-slate-100 rounded-lg overflow-hidden min-h-[300px]">
+              {previewFile && previewFile.type.startsWith('image/') ? (
+                <img 
+                  src={URL.createObjectURL(previewFile)} 
+                  alt={previewFile.name} 
+                  className="max-w-full max-h-[60vh] object-contain rounded shadow-sm" 
+                />
+              ) : previewFile && previewFile.type === 'application/pdf' ? (
+                <iframe 
+                  src={URL.createObjectURL(previewFile)} 
+                  className="w-full h-[60vh] border-0 rounded bg-white"
+                  title="PDF Preview"
+                />
+              ) : (
+                <div className="flex flex-col items-center justify-center text-slate-400 bg-white w-full h-[300px] rounded">
+                  <FileText className="w-12 h-12 mb-2 text-slate-300" />
+                  <p className="text-sm">Preview tidak tersedia untuk format ini.</p>
+                  <p className="text-xs text-slate-400 mt-1 truncate max-w-[80%]">{previewFile?.name}</p>
+                </div>
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </UserLayout>
   );

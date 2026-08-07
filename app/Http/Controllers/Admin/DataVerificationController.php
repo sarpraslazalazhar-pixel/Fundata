@@ -139,6 +139,11 @@ class DataVerificationController extends Controller
             'catatan' => 'required|string|max:1000',
             'general_attachments' => 'nullable|array|max:3',
             'general_attachments.*' => 'file|max:3072|mimes:jpg,jpeg,png,pdf,doc,docx',
+            'link_kwitansi' => 'nullable|required_if:status,solve|url|max:255',
+            'nomor_kwitansi' => 'nullable|string|max:100',
+        ], [
+            'link_kwitansi.required_if' => 'Link Kwitansi wajib diisi jika status tiket Selesai.',
+            'link_kwitansi.url' => 'Format Link Kwitansi tidak valid.',
         ]);
 
         $newStatus = $request->status;
@@ -148,12 +153,16 @@ class DataVerificationController extends Controller
             return redirect()->back()->with('error', 'Transisi status tidak valid.');
         }
 
+        $updateData = ['status' => $newStatus];
+
         if ($newStatus === 'solve') {
             // Reset is_result_accepted saat admin set solve (user perlu review lagi)
-            $record->update(['is_result_accepted' => false]);
+            $updateData['is_result_accepted'] = false;
+            $updateData['link_kwitansi'] = $request->link_kwitansi;
+            $updateData['nomor_kwitansi'] = $request->nomor_kwitansi;
         }
 
-        $record->update(['status' => $newStatus]);
+        $record->update($updateData);
 
         if ($record->booking) {
             $record->booking->update(['status' => $newStatus]);
