@@ -15,8 +15,6 @@ use App\Http\Controllers\Api\DropdownController;
 
 Route::get('/', HomeController::class);
 
-// TV Dashboard (Public)
-Route::get('/tv', [\App\Http\Controllers\TvDashboardController::class, 'index'])->name('tv.index');
 Route::get('/system/notification-sound', [\App\Http\Controllers\Admin\SystemConfigController::class, 'serveNotificationSound'])->name('system.notification-sound');
 
 Route::middleware('guest')->group(function () {
@@ -68,11 +66,13 @@ Route::middleware('auth:web,admin')->group(function () {
 });
 
 // API dropdown (dependent dropdown & dynamic form)
-Route::prefix('api')->group(function () {
+Route::prefix('api')->middleware('auth:web,admin')->group(function () {
     Route::get('/org-units/{divisiId}', [DropdownController::class, 'orgUnits'])->name('api.org-units');
     Route::get('/sub-units/{unitId}', [DropdownController::class, 'subUnits'])->name('api.sub-units');
     Route::get('/form-fields/{subUnitId}', [DropdownController::class, 'formFields'])->name('api.form-fields');
-    Route::get('/donatur/search', [\App\Http\Controllers\Api\DonaturController::class, 'search'])->name('api.donatur.search');
+    
+    // ponytail: added throttle middleware to donatur search to prevent scraping / PII leak
+    Route::get('/donatur/search', [\App\Http\Controllers\Api\DonaturController::class, 'search'])->middleware('throttle:30,1')->name('api.donatur.search');
     Route::post('/donatur/quick-store', [\App\Http\Controllers\Api\DonaturController::class, 'quickStore'])->name('api.donatur.quick-store');
 });
 

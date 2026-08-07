@@ -126,6 +126,15 @@ class DataInputController extends Controller
                 'status' => $initialStatus,
             ]);
 
+            // ponytail: Validate file uploads BEFORE processing them to prevent RCE / malicious files
+            $request->validate([
+                'attachments.*.*' => 'nullable|file|mimes:jpeg,png,jpg,pdf,doc,docx,xls,xlsx|max:10240',
+                'general_attachments.*' => 'nullable|file|mimes:jpeg,png,jpg,pdf,doc,docx,xls,xlsx|max:10240',
+            ], [
+                'mimes' => 'File harus berupa gambar (JPEG, PNG), PDF, atau dokumen Office (Word, Excel).',
+                'max' => 'Ukuran maksimal file adalah 10MB.'
+            ]);
+
             // 2. Simpan attachments
             $uploadedFiles = $request->file('attachments');
             if (!empty($uploadedFiles) && is_array($uploadedFiles)) {
