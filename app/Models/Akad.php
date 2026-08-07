@@ -43,4 +43,12 @@ class Akad extends Model
     {
         return $this->hasMany(Akad::class, 'parent_id');
     }
+
+    /**
+     * Get all transaction records tied to this Akad.
+     */
+    public function records(): HasMany
+    {
+        return $this->hasMany(Record::class, 'akad_id');
+    }
 }

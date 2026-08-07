@@ -6,8 +6,8 @@
 - [x] Modul Database Donator
 - [x] database metode bayar
 - [x] database akad/layanan (ada infak, zakat, campaign, wakaf dan DSKL)
-- [ ] nominal di filter semua data
-- [ ] 
+- [x] nominal di filter semua data
+- [x] Log audit kontributor per campaign & akad (siapa saja yang input data, filter status/tanggal/user, ekspor Excel)
 
 
 

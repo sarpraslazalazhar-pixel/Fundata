@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
 import AdminLayout from '@/Layouts/AdminLayout';
-import { useForm } from '@inertiajs/react';
+import { Link, useForm } from '@inertiajs/react';
 import { Button } from '@/Components/ui/button';
 import { Input } from '@/Components/ui/input';
 import { Label } from '@/Components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/Components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/Components/ui/dialog';
 import Swal from 'sweetalert2';
-import { Pencil, Trash2, Eye } from 'lucide-react';
+import { Pencil, Trash2, Eye, History } from 'lucide-react';
 
 interface Campaign {
  id: number;
@@ -196,6 +196,11 @@ export default function CampaignIndex({ campaigns }: { campaigns: Campaign[] }) 
  </span>
  </TableCell>
   <TableCell className="space-x-2">
+    <Link href={route('admin.master.campaigns.log-audit', campaign.id)}>
+      <Button variant="outline" size="icon" title="Log Audit (siapa saja yang input)" className="text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50">
+        <History className="w-4 h-4" />
+      </Button>
+    </Link>
     <Button variant="outline" size="icon" title="Lihat Detail" onClick={() => setViewCampaign(campaign)}>
       <Eye className="w-4 h-4 text-blue-600" />
     </Button>

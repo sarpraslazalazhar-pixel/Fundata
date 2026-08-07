@@ -63,6 +63,7 @@ Route::middleware('auth:web,admin')->group(function () {
     Route::get('/api/messages/contacts', [\App\Http\Controllers\MessageController::class, 'contacts']);
     Route::get('/api/messages/context-options', [\App\Http\Controllers\MessageController::class, 'contextOptions']);
     Route::get('/api/messages/{userId}', [\App\Http\Controllers\MessageController::class, 'fetchMessages']);
+    Route::post('/api/messages/{userId}/read', [\App\Http\Controllers\MessageController::class, 'markAsRead']);
     Route::post('/api/messages', [\App\Http\Controllers\MessageController::class, 'store']);
 });
 
@@ -149,6 +150,12 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::resource('master/metode-pembayaran', \App\Http\Controllers\Admin\PaymentMethodController::class)->except(['create', 'edit', 'show'])->names('master.metode-pembayaran');
             Route::resource('master/campaigns', \App\Http\Controllers\Admin\CampaignController::class)->except(['create', 'edit', 'show'])->names('master.campaigns');
             Route::resource('master/akad', \App\Http\Controllers\Admin\AkadController::class)->except(['create', 'edit', 'show'])->names('master.akad');
+
+            // Log Audit: siapa saja yang menginput data per campaign / akad
+            Route::get('master/campaigns/{campaign}/log-audit', [\App\Http\Controllers\Admin\LogAuditController::class, 'campaign'])->name('master.campaigns.log-audit');
+            Route::get('master/campaigns/{campaign}/log-audit/export', [\App\Http\Controllers\Admin\LogAuditController::class, 'exportCampaign'])->name('master.campaigns.log-audit.export');
+            Route::get('master/akad/{akad}/log-audit', [\App\Http\Controllers\Admin\LogAuditController::class, 'akad'])->name('master.akad.log-audit');
+            Route::get('master/akad/{akad}/log-audit/export', [\App\Http\Controllers\Admin\LogAuditController::class, 'exportAkad'])->name('master.akad.log-audit.export');
 
             Route::get('donatur/import/template', [\App\Http\Controllers\Admin\DonaturController::class, 'importTemplate'])->name('donatur.import.template');
             Route::post('donatur/import/preview', [\App\Http\Controllers\Admin\DonaturController::class, 'importPreview'])->name('donatur.import.preview');

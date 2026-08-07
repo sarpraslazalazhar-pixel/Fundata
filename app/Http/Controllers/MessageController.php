@@ -55,6 +55,34 @@ class MessageController extends Controller
         $currentUser = $this->getCurrentUser($request);
         $currentType = $this->getCurrentType($request);
 
+        // Fetch all conversations for current user
+        $conversations = Conversation::where(function ($query) use ($currentUser, $currentType) {
+            $query->where('participant_one_type', $currentType)
+                  ->where('participant_one_id', $currentUser->id);
+        })->orWhere(function ($query) use ($currentUser, $currentType) {
+            $query->where('participant_two_type', $currentType)
+                  ->where('participant_two_id', $currentUser->id);
+        })->with(['messages' => function ($q) {
+            $q->orderBy('created_at', 'desc');
+        }])->get();
+
+        $convMap = [];
+        foreach ($conversations as $conv) {
+            $isOne = ($conv->participant_one_type === $currentType && $conv->participant_one_id == $currentUser->id);
+            $otherType = $isOne ? $conv->participant_two_type : $conv->participant_one_type;
+            $otherId = $isOne ? $conv->participant_two_id : $conv->participant_one_id;
+
+            $key = $otherType . ':' . $otherId;
+            $lastMsg = $conv->messages->first();
+            $unreadCount = $conv->messages->where('sender_type', $otherType)->where('sender_id', $otherId)->where('is_read', false)->count();
+
+            $convMap[$key] = [
+                'last_message' => $lastMsg ? ($lastMsg->body ?: ($lastMsg->attachment_path ? '[Lampiran]' : '')) : '',
+                'last_message_at' => $lastMsg ? $lastMsg->created_at->toISOString() : null,
+                'unread_count' => $unreadCount,
+            ];
+        }
+
         // Jika yang login adalah User biasa, dia TIDAK BOLEH melihat User lain di kontaknya (hanya bisa chat ke Admin)
         if ($currentType === User::class) {
             $users = collect([]);
@@ -79,8 +107,25 @@ class MessageController extends Controller
             return $admin;
         });
 
-        $contacts = $admins->concat($users);
-        return response()->json($contacts->values());
+        $contacts = $admins->concat($users)->map(function($contact) use ($convMap) {
+            $key = $contact->model_type . ':' . $contact->id;
+            $info = $convMap[$key] ?? [
+                'last_message' => '',
+                'last_message_at' => null,
+                'unread_count' => 0,
+            ];
+            $contact->last_message = $info['last_message'];
+            $contact->last_message_at = $info['last_message_at'];
+            $contact->unread_count = $info['unread_count'];
+            return $contact;
+        });
+
+        // Sort by last_message_at desc
+        $sortedContacts = $contacts->sortByDesc(function($c) {
+            return $c->last_message_at ?? '1970-01-01T00:00:00.000Z';
+        });
+
+        return response()->json($sortedContacts->values());
     }
 
     public function fetchMessages(Request $request, $receiverId)
@@ -109,8 +154,48 @@ class MessageController extends Controller
             return response()->json([]);
         }
 
+        // Auto mark as read when fetching messages
+        $conversation->messages()
+            ->where('sender_type', $receiverType)
+            ->where('sender_id', $receiverId)
+            ->where('is_read', false)
+            ->update(['is_read' => true]);
+
         $messages = $conversation->messages()->with('context')->get();
         return response()->json($messages);
+    }
+
+    public function markAsRead(Request $request, $receiverId)
+    {
+        $receiverType = $request->input('receiver_type') ?? $request->query('receiver_type');
+        if (!$receiverType) {
+            return response()->json(['success' => false]);
+        }
+
+        $senderType = $this->getCurrentType($request);
+        $senderId = $this->getCurrentUser($request)->id;
+
+        $conversation = Conversation::where(function ($query) use ($senderId, $senderType, $receiverId, $receiverType) {
+            $query->where('participant_one_type', $senderType)
+                  ->where('participant_one_id', $senderId)
+                  ->where('participant_two_type', $receiverType)
+                  ->where('participant_two_id', $receiverId);
+        })->orWhere(function ($query) use ($senderId, $senderType, $receiverId, $receiverType) {
+            $query->where('participant_one_type', $receiverType)
+                  ->where('participant_one_id', $receiverId)
+                  ->where('participant_two_type', $senderType)
+                  ->where('participant_two_id', $senderId);
+        })->first();
+
+        if ($conversation) {
+            $conversation->messages()
+                ->where('sender_type', $receiverType)
+                ->where('sender_id', $receiverId)
+                ->where('is_read', false)
+                ->update(['is_read' => true]);
+        }
+
+        return response()->json(['success' => true]);
     }
 
     public function store(Request $request)

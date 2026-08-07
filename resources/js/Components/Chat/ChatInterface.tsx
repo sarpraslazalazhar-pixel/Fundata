@@ -2,8 +2,71 @@ import React, { useState, useEffect, useRef } from 'react';
 import { usePage, Head } from '@inertiajs/react';
 import axios from 'axios';
 import { format } from 'date-fns';
-import { Send, Search, Users, ChevronLeft, Paperclip, FileText, Download, X, Loader2, Link2 } from 'lucide-react';
+import toast from 'react-hot-toast';
+import { Send, Search, Users, ChevronLeft, Paperclip, FileText, Download, X, Loader2, Link2, Bell } from 'lucide-react';
 import { Button } from '@/Components/ui/button';
+
+// Helper for date formatting in Indonesian
+const formatIndonesianDate = (date: Date) => {
+    const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+    const months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+    const dayName = days[date.getDay()];
+    const dayNum = date.getDate();
+    const monthName = months[date.getMonth()];
+    const year = date.getFullYear();
+    return `${dayName}, ${dayNum} ${monthName} ${year}`;
+};
+
+const getDateLabel = (dateStr?: string) => {
+    if (!dateStr) return '';
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return '';
+    const today = new Date();
+    const yesterday = new Date();
+    yesterday.setDate(today.getDate() - 1);
+
+    if (d.toDateString() === today.toDateString()) return 'Hari ini';
+    if (d.toDateString() === yesterday.toDateString()) return 'Kemarin';
+    return formatIndonesianDate(d);
+};
+
+const formatSidebarTime = (dateStr?: string) => {
+    if (!dateStr) return '';
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return '';
+    const today = new Date();
+    const yesterday = new Date();
+    yesterday.setDate(today.getDate() - 1);
+
+    if (d.toDateString() === today.toDateString()) {
+        return format(d, 'HH:mm');
+    }
+    if (d.toDateString() === yesterday.toDateString()) {
+        return 'Kemarin';
+    }
+    return format(d, 'dd/MM/yy');
+};
+
+const playChimeSound = () => {
+    try {
+        const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+        if (!AudioContextClass) return;
+        const ctx = new AudioContextClass();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(587.33, ctx.currentTime); // D5
+        osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.15); // A5
+        gain.gain.setValueAtTime(0.15, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.3);
+    } catch (e) {
+        console.error('Audio chime error:', e);
+    }
+};
 
 export default function ChatInterface({ guard }: { guard?: 'user' | 'admin' }) {
     const { auth } = usePage<any>().props;
@@ -11,7 +74,6 @@ export default function ChatInterface({ guard }: { guard?: 'user' | 'admin' }) {
     const user = isExplicitAdmin ? auth?.admin : auth?.user;
     const userModelType = isExplicitAdmin ? 'App\\Models\\Admin' : 'App\\Models\\User';
 
-    
     const [contacts, setContacts] = useState<any[]>([]);
     const [activeChat, setActiveChat] = useState<any | null>(null);
     const [messages, setMessages] = useState<any[]>([]);
@@ -19,21 +81,119 @@ export default function ChatInterface({ guard }: { guard?: 'user' | 'admin' }) {
     const [attachment, setAttachment] = useState<File | null>(null);
     const [loading, setLoading] = useState(false);
     const [search, setSearch] = useState('');
-    
+
     const [selectedContext, setSelectedContext] = useState<any | null>(null);
     const [showContextModal, setShowContextModal] = useState(false);
     const [contextOptions, setContextOptions] = useState<any[]>([]);
     const [loadingContext, setLoadingContext] = useState(false);
 
     const messagesEndRef = useRef<HTMLDivElement>(null);
+    const activeChatRef = useRef<any | null>(null);
 
+    // Keep activeChatRef synced
     useEffect(() => {
-        fetchContacts();
-        
+        activeChatRef.current = activeChat;
+    }, [activeChat]);
+
+    const formatRupiah = (val?: number | string) => {
+        if (val === null || val === undefined || val === '') return null;
+        const num = Number(val);
+        if (isNaN(num) || num === 0) return typeof val === 'string' && val.trim() !== '' ? val : null;
+        return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(num);
+    };
+
+    const renderContextCard = (context: any, isMe: boolean) => {
+        if (!context) return null;
+
+        const getStatusInfo = (status?: string) => {
+            const s = (status || '').toLowerCase();
+            if (s === 'approved' || s === 'selesai' || s === 'completed' || s === 'accepted') {
+                return { label: 'Disetujui', bg: 'bg-emerald-100 text-emerald-700 border-emerald-200' };
+            }
+            if (s === 'rejected' || s === 'ditolak' || s === 'canceled') {
+                return { label: 'Ditolak', bg: 'bg-rose-100 text-rose-700 border-rose-200' };
+            }
+            if (s === 'in_progress' || s === 'proses' || s === 'diproses') {
+                return { label: 'Dalam Proses', bg: 'bg-blue-100 text-blue-700 border-blue-200' };
+            }
+            return { label: 'Menunggu', bg: 'bg-amber-100 text-amber-700 border-amber-200' };
+        };
+
+        const ticketId = context.formatted_id ? `Tiket #${context.formatted_id}` : (context.id ? `Tiket #${context.id}` : 'Tautan Data');
+        const serviceName = context.sub_unit_nama || context.sub_unit?.nama_layanan || '';
+        const title = context.judul || (serviceName ? `Pengajuan ${serviceName}` : `Tiket #${context.id}`);
+        const donaturName = context.donatur_nama || context.donatur?.nama_lengkap || context.form_data?.nama_donatur || context.form_data?.donatur_nama || context.form_data?.nama_lengkap;
+        const rawNominal = context.jumlah_donasi || context.form_data?.jumlah_donasi || context.form_data?.nominal;
+        const nominalFormatted = formatRupiah(rawNominal);
+
+        const statusInfo = getStatusInfo(context.status);
+        const dateFormatted = context.created_at ? format(new Date(context.created_at), 'dd MMM yyyy, HH:mm') : '';
+
+        const href = userModelType === 'App\\Models\\Admin'
+            ? `/admin/verifikasi-data/${context.id}`
+            : `/data/${context.id}`;
+
+        return (
+            <a
+                href={href}
+                className={`block w-full rounded-2xl p-3.5 mb-1.5 border shadow-sm transition-all group overflow-hidden ${
+                    isMe
+                        ? 'bg-white/95 text-slate-800 border-white/40 hover:bg-white hover:shadow-md'
+                        : 'bg-slate-50 border-slate-200 hover:bg-white hover:border-primary/30 hover:shadow-md'
+                }`}
+            >
+                <div className="flex items-start justify-between gap-2 border-b border-slate-100 pb-2 mb-2.5">
+                    <div className="flex items-center gap-2 min-w-0">
+                        <div className="h-7 w-7 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                            <FileText className="h-4 w-4 text-primary" />
+                        </div>
+                        <div className="min-w-0">
+                            <span className="font-bold text-xs text-primary truncate block">{ticketId}</span>
+                            {serviceName && (
+                                <span className="text-[11px] text-slate-500 truncate block font-medium">{serviceName}</span>
+                            )}
+                        </div>
+                    </div>
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border shrink-0 ${statusInfo.bg}`}>
+                        {statusInfo.label}
+                    </span>
+                </div>
+
+                {/* Info Donatur & Nominal */}
+                {donaturName && (
+                    <div className="text-xs text-slate-600 font-medium truncate mb-1">
+                        👤 Donatur: <span className="font-semibold text-slate-900">{donaturName}</span>
+                    </div>
+                )}
+
+                {nominalFormatted ? (
+                    <div className="text-sm font-bold text-slate-900 mb-2">
+                        {nominalFormatted}
+                    </div>
+                ) : (
+                    <div className="text-xs font-semibold text-slate-800 line-clamp-2 mb-2 group-hover:text-primary transition-colors">
+                        {title}
+                    </div>
+                )}
+
+                <div className="flex items-center justify-between text-[10px] text-slate-400 font-medium pt-1.5 border-t border-slate-100">
+                    <span>{dateFormatted}</span>
+                    <span className="text-primary font-bold group-hover:translate-x-0.5 transition-transform flex items-center gap-0.5">
+                        Lihat Detail &rarr;
+                    </span>
+                </div>
+            </a>
+        );
+    };
+
+    // Initial contacts load and context from URL
+    useEffect(() => {
+        fetchContacts(true);
+
         const urlParams = new URLSearchParams(window.location.search);
         const ctxId = urlParams.get('context_id');
         const ctxTitle = urlParams.get('context_title');
-        
+
         if (ctxId && ctxTitle) {
             setSelectedContext({
                 id: ctxId,
@@ -43,60 +203,154 @@ export default function ChatInterface({ guard }: { guard?: 'user' | 'admin' }) {
         }
     }, []);
 
+    // When activeChat changes, fetch messages and mark as read
     useEffect(() => {
         if (activeChat) {
             fetchMessages(activeChat);
+            markAsRead(activeChat);
         }
     }, [activeChat]);
 
+    // Scroll to bottom when messages change
     useEffect(() => {
         if (messagesEndRef.current) {
             messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
         }
     }, [messages]);
 
-    useEffect(() => {
-        if (user) {
-            const channel = userModelType === 'App\\Models\\Admin'
-                ? `App.Models.Admin.${user.id}`
-                : `App.Models.User.${user.id}`;
-                
-            window.Echo.private(channel)
-                .listen('MessageSent', (e: any) => {
-                    const msg = e.message;
-                    // If chat is open and we are talking to the sender, append it
-                    if (activeChat && activeChat.id === msg.sender_id && activeChat.model_type === msg.sender_type) {
-                        setMessages(prev => [...prev, msg]);
-                    }
-                    // Web push handles background notifications
-                });
-            return () => {
-                window.Echo.leave(channel);
-            }
-        }
-    }, [user, activeChat]);
-
-    const fetchContacts = async () => {
-        setLoading(true);
+    const fetchContacts = async (showLoading = false) => {
+        if (showLoading) setLoading(true);
         try {
             const res = await axios.get(`/api/messages/contacts?sender_type=${userModelType === 'App\\Models\\Admin' ? 'admin' : 'user'}`);
             setContacts(res.data);
         } catch (error) {
             console.error(error);
         }
-        setLoading(false);
+        if (showLoading) setLoading(false);
     };
 
-    const fetchMessages = async (chat: any) => {
-        setLoading(true);
+    const fetchMessages = async (chat: any, silent = false) => {
+        if (!silent) setLoading(true);
         try {
             const res = await axios.get(`/api/messages/${chat.id}?receiver_type=${encodeURIComponent(chat.model_type)}&sender_type=${userModelType === 'App\\Models\\Admin' ? 'admin' : 'user'}`);
             setMessages(res.data);
         } catch (error) {
             console.error(error);
         }
-        setLoading(false);
+        if (!silent) setLoading(false);
     };
+
+    const markAsRead = async (chat: any) => {
+        try {
+            await axios.post(`/api/messages/${chat.id}/read`, {
+                receiver_type: chat.model_type,
+                sender_type: userModelType === 'App\\Models\\Admin' ? 'admin' : 'user'
+            });
+            // Update contacts state: reset unread_count to 0 for this contact
+            setContacts(prev => prev.map(c => {
+                if (c.id === chat.id && c.model_type === chat.model_type) {
+                    return { ...c, unread_count: 0 };
+                }
+                return c;
+            }));
+        } catch (error) {
+            console.error('Failed to mark as read', error);
+        }
+    };
+
+    // WebSocket listener via Echo
+    useEffect(() => {
+        if (!user || !(window as any).Echo) return;
+
+        const channelName = userModelType === 'App\\Models\\Admin'
+            ? `App.Models.Admin.${user.id}`
+            : `App.Models.User.${user.id}`;
+
+        const channel = (window as any).Echo.private(channelName);
+
+        channel.listen('MessageSent', (e: any) => {
+            const msg = e.message;
+            const currentActive = activeChatRef.current;
+
+            const isCurrentActiveMsg = currentActive &&
+                String(currentActive.id) === String(msg.sender_id) &&
+                currentActive.model_type === msg.sender_type;
+
+            if (isCurrentActiveMsg) {
+                // Append message to active chat
+                setMessages(prev => {
+                    if (prev.some(m => m.id === msg.id)) return prev;
+                    return [...prev, msg];
+                });
+                // Auto mark as read
+                markAsRead(currentActive);
+            } else {
+                // Incoming message from non-active contact
+                playChimeSound();
+
+                // Find sender name from contacts
+                const senderContact = contacts.find(c => String(c.id) === String(msg.sender_id) && c.model_type === msg.sender_type);
+                const senderName = senderContact?.name || 'Pesan Baru';
+                toast(`💬 ${senderName}: ${msg.body || '[Lampiran]'}`, {
+                    duration: 4000,
+                    style: {
+                        borderRadius: '12px',
+                        background: '#333',
+                        color: '#fff',
+                    },
+                });
+            }
+
+            // Update contact list sidebar (last_message, last_message_at, unread_count, sort)
+            setContacts(prevContacts => {
+                const senderKey = `${msg.sender_type}-${msg.sender_id}`;
+                let updated = false;
+
+                const newContacts = prevContacts.map(c => {
+                    const key = `${c.model_type}-${c.id}`;
+                    if (key === senderKey) {
+                        updated = true;
+                        return {
+                            ...c,
+                            last_message: msg.body || (msg.attachment_path ? '[Lampiran]' : ''),
+                            last_message_at: msg.created_at || new Date().toISOString(),
+                            unread_count: isCurrentActiveMsg ? 0 : ((c.unread_count || 0) + 1),
+                        };
+                    }
+                    return c;
+                });
+
+                if (!updated) {
+                    // Refresh contact list if sender was not in initial list
+                    fetchContacts(false);
+                    return prevContacts;
+                }
+
+                // Sort by last_message_at descending
+                return [...newContacts].sort((a, b) => {
+                    const timeA = new Date(a.last_message_at || 0).getTime();
+                    const timeB = new Date(b.last_message_at || 0).getTime();
+                    return timeB - timeA;
+                });
+            });
+        });
+
+        return () => {
+            (window as any).Echo.leave(channelName);
+        };
+    }, [user, userModelType, contacts]);
+
+    // Fallback auto-polling every 6 seconds
+    useEffect(() => {
+        const interval = setInterval(() => {
+            fetchContacts(false);
+            if (activeChatRef.current) {
+                fetchMessages(activeChatRef.current, true);
+            }
+        }, 6000);
+
+        return () => clearInterval(interval);
+    }, []);
 
     const handleOpenContextModal = async () => {
         setShowContextModal(true);
@@ -122,7 +376,7 @@ export default function ChatInterface({ guard }: { guard?: 'user' | 'admin' }) {
         setNewMessage('');
         setAttachment(null);
         setSelectedContext(null);
-        
+
         const tempMsg = {
             id: Date.now(),
             sender_id: user.id,
@@ -141,6 +395,22 @@ export default function ChatInterface({ guard }: { guard?: 'user' | 'admin' }) {
                 : null
         };
         setMessages(prev => [...prev, tempMsg]);
+
+        // Optimistically update contact sidebar for sent message
+        setContacts(prev => {
+            const activeKey = `${activeChat.model_type}-${activeChat.id}`;
+            const updated = prev.map(c => {
+                if (`${c.model_type}-${c.id}` === activeKey) {
+                    return {
+                        ...c,
+                        last_message: text || (currentAttachment ? '[Lampiran]' : ''),
+                        last_message_at: tempMsg.created_at,
+                    };
+                }
+                return c;
+            });
+            return [...updated].sort((a, b) => new Date(b.last_message_at || 0).getTime() - new Date(a.last_message_at || 0).getTime());
+        });
 
         try {
             let base64Attachment = null;
@@ -185,7 +455,7 @@ export default function ChatInterface({ guard }: { guard?: 'user' | 'admin' }) {
     return (
         <div className="flex h-[calc(100vh-140px)] md:h-[calc(100vh-100px)] border rounded-2xl bg-white overflow-hidden shadow-sm relative">
             <Head title="Pesan" />
-            
+
             {/* Context Modal */}
             {showContextModal && (
                 <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
@@ -207,8 +477,8 @@ export default function ChatInterface({ guard }: { guard?: 'user' | 'admin' }) {
                             ) : (
                                 <div className="flex flex-col gap-2">
                                     {contextOptions.map(ctx => (
-                                        <button 
-                                            key={ctx.id} 
+                                        <button
+                                            key={ctx.id}
                                             onClick={() => { setSelectedContext(ctx); setShowContextModal(false); }}
                                             className="text-left p-3 border rounded-xl hover:border-primary hover:bg-primary/5 transition-colors flex items-center justify-between group"
                                         >
@@ -241,38 +511,61 @@ export default function ChatInterface({ guard }: { guard?: 'user' | 'admin' }) {
                         />
                     </div>
                 </div>
-                
+
                 <div className="flex-1 overflow-y-auto p-2">
                     {loading && contacts.length === 0 ? (
-                        <div className="p-4 text-center text-sm text-muted-foreground">Memuat kontak...</div>
+                        <div className="p-4 text-center text-sm text-muted-foreground flex flex-col items-center justify-center gap-2 py-10">
+                            <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                            <span>Memuat kontak...</span>
+                        </div>
                     ) : filteredContacts.length === 0 ? (
-                        <div className="p-4 text-center text-sm text-muted-foreground flex flex-col items-center gap-2">
+                        <div className="p-4 text-center text-sm text-muted-foreground flex flex-col items-center gap-2 py-10">
                             <Users className="h-8 w-8 text-slate-300" />
                             <p>Tidak ada kontak ditemukan.</p>
                         </div>
                     ) : (
                         <div className="flex flex-col gap-1">
-                            {filteredContacts.map(contact => (
-                                <button
-                                    key={`${contact.model_type}-${contact.id}`}
-                                    onClick={() => setActiveChat(contact)}
-                                    className={`flex items-center gap-3 p-3 w-full rounded-xl transition-colors text-left ${activeChat?.id === contact.id && activeChat?.model_type === contact.model_type ? 'bg-primary/10' : 'hover:bg-slate-100'}`}
-                                >
-                                    <div className="h-12 w-12 bg-primary/10 rounded-full flex items-center justify-center shrink-0">
-                                        {contact.avatar_path ? (
-                                            <img src={`/storage/${contact.avatar_path}`} alt="" className="h-full w-full rounded-full object-cover" />
-                                        ) : (
-                                            <span className="font-semibold text-primary">{contact.name.charAt(0)}</span>
-                                        )}
-                                    </div>
-                                    <div className="min-w-0 flex-1">
-                                        <div className="flex items-baseline gap-2 mb-0.5">
-                                            <p className="font-semibold text-sm truncate">{contact.name}</p>
-                                            <span className="text-[10px] bg-slate-200/50 text-slate-500 px-1.5 py-0.5 rounded-md uppercase tracking-wider">{contact.type}</span>
+                            {filteredContacts.map(contact => {
+                                const isActive = activeChat?.id === contact.id && activeChat?.model_type === contact.model_type;
+                                const unreadCount = contact.unread_count || 0;
+                                return (
+                                    <button
+                                        key={`${contact.model_type}-${contact.id}`}
+                                        onClick={() => setActiveChat(contact)}
+                                        className={`flex items-center gap-3 p-3 w-full rounded-xl transition-all text-left ${isActive ? 'bg-primary/10 shadow-xs' : 'hover:bg-slate-100/80'}`}
+                                    >
+                                        <div className="relative shrink-0">
+                                            <div className="h-12 w-12 bg-primary/10 rounded-full flex items-center justify-center overflow-hidden">
+                                                {contact.avatar_path ? (
+                                                    <img src={`/storage/${contact.avatar_path}`} alt="" className="h-full w-full rounded-full object-cover" />
+                                                ) : (
+                                                    <span className="font-semibold text-primary text-base">{(contact.name || 'U').charAt(0).toUpperCase()}</span>
+                                                )}
+                                            </div>
                                         </div>
-                                    </div>
-                                </button>
-                            ))}
+                                        <div className="min-w-0 flex-1">
+                                            <div className="flex items-baseline justify-between mb-0.5">
+                                                <p className={`text-sm truncate ${unreadCount > 0 ? 'font-bold text-slate-900' : 'font-semibold text-slate-800'}`}>
+                                                    {contact.name}
+                                                </p>
+                                                <span className={`text-[11px] shrink-0 ml-1.5 ${unreadCount > 0 ? 'font-semibold text-primary' : 'text-slate-400'}`}>
+                                                    {formatSidebarTime(contact.last_message_at)}
+                                                </span>
+                                            </div>
+                                            <div className="flex items-center justify-between gap-2">
+                                                <p className={`text-xs truncate ${unreadCount > 0 ? 'font-medium text-slate-900' : 'text-slate-500'}`}>
+                                                    {contact.last_message || 'Belum ada pesan'}
+                                                </p>
+                                                {unreadCount > 0 && (
+                                                    <span className="bg-primary text-primary-foreground font-bold text-[10px] min-w-5 h-5 px-1.5 rounded-full flex items-center justify-center shrink-0 shadow-xs animate-pulse">
+                                                        {unreadCount > 99 ? '99+' : unreadCount}
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </button>
+                                );
+                            })}
                         </div>
                     )}
                 </div>
@@ -281,42 +574,42 @@ export default function ChatInterface({ guard }: { guard?: 'user' | 'admin' }) {
             {/* Area Kanan - Percakapan */}
             <div className={`flex-1 flex-col bg-[#F0F2F5] ${!activeChat ? 'hidden md:flex' : 'flex'}`}>
                 {!activeChat ? (
-                    <div className="flex-1 flex flex-col items-center justify-center text-slate-400 bg-slate-50/50">
-                        <div className="h-24 w-24 bg-slate-100 rounded-full flex items-center justify-center mb-4">
+                    <div className="flex-1 flex flex-col items-center justify-center text-slate-400 bg-slate-50/50 p-6 text-center">
+                        <div className="h-24 w-24 bg-slate-100 rounded-full flex items-center justify-center mb-4 shadow-xs">
                             <Send className="h-10 w-10 text-slate-300 ml-1" />
                         </div>
-                        <p className="font-medium text-lg text-slate-500">Mulai Percakapan</p>
-                        <p className="text-sm">Pilih kontak di samping untuk mulai berkirim pesan.</p>
+                        <p className="font-semibold text-lg text-slate-700">Mulai Percakapan</p>
+                        <p className="text-sm text-slate-500 max-w-sm mt-1">Pilih kontak di sebelah kiri untuk melihat percakapan dan berkirim pesan secara real-time.</p>
                     </div>
                 ) : (
                     <>
-                        <div className="h-16 px-4 bg-white border-b flex items-center gap-3 shrink-0">
+                        {/* Header Chat */}
+                        <div className="h-16 px-4 bg-white border-b flex items-center gap-3 shrink-0 shadow-xs z-10">
                             <Button variant="ghost" size="icon" onClick={() => setActiveChat(null)} className="md:hidden shrink-0">
                                 <ChevronLeft className="h-5 w-5" />
                             </Button>
-                            <div className="h-10 w-10 bg-primary/10 rounded-full flex items-center justify-center shrink-0">
+                            <div className="h-10 w-10 bg-primary/10 rounded-full flex items-center justify-center shrink-0 overflow-hidden">
                                 {activeChat.avatar_path ? (
                                     <img src={`/storage/${activeChat.avatar_path}`} alt="" className="h-full w-full rounded-full object-cover" />
                                 ) : (
-                                    <span className="font-semibold text-primary">{activeChat.name.charAt(0)}</span>
+                                    <span className="font-semibold text-primary">{(activeChat.name || 'U').charAt(0).toUpperCase()}</span>
                                 )}
                             </div>
-                            <div className="flex items-center gap-2">
-                                <h3 className="font-semibold">{activeChat.name}</h3>
-                                <span className="text-[10px] bg-slate-200/50 text-slate-500 px-1.5 py-0.5 rounded-md uppercase tracking-wider">{activeChat.type}</span>
+                            <div className="flex flex-col min-w-0">
+                                <div className="flex items-center gap-2">
+                                    <h3 className="font-bold text-slate-800 truncate text-sm md:text-base">{activeChat.name}</h3>
+                                    <span className="text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full uppercase tracking-wider font-semibold">{activeChat.type}</span>
+                                </div>
                             </div>
                             <div className="ml-auto">
-                                <Button 
-                                    variant="ghost" 
-                                    size="sm" 
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
                                     className={`text-slate-500 hover:text-primary ${Notification.permission === 'granted' ? 'text-primary' : ''}`}
                                     onClick={() => {
                                         Notification.requestPermission().then(async (perm) => {
                                             if (perm === 'granted') {
-                                                const { useWebPush } = await import('@/hooks/useWebPush');
-                                                // We can just rely on the layout's useWebPush if it handles it on load, 
-                                                // but let's force a reload to trigger the layout hook to subscribe
-                                                window.location.reload();
+                                                toast.success('Notifikasi desktop diaktifkan!');
                                             } else {
                                                 alert('Izin notifikasi ditolak oleh browser.');
                                             }
@@ -324,62 +617,77 @@ export default function ChatInterface({ guard }: { guard?: 'user' | 'admin' }) {
                                     }}
                                     title="Aktifkan Notifikasi Desktop"
                                 >
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+                                    <Bell className="h-5 w-5" />
                                 </Button>
                             </div>
                         </div>
 
-                        <div className="flex-1 overflow-y-auto p-4 md:p-6 flex flex-col gap-4">
-                            {messages.map((msg, idx) => {
-                                const isMe = String(msg.sender_id) === String(user.id) && msg.sender_type === userModelType;
-                                return (
-                                    <div key={msg.id || idx} className={`flex flex-col ${isMe ? 'items-end' : 'items-start'} gap-1 max-w-[85%] md:max-w-[70%] ${isMe ? 'self-end' : 'self-start'}`}>
-                                        {msg.context && (
-                                            <a href={userModelType === 'App\\Models\\Admin' ? `/admin/verifikasi-data/${msg.context_id}` : `/data/${msg.context_id}`} className="block w-full text-xs bg-white/90 backdrop-blur border shadow-sm rounded-xl p-3 mb-1 hover:bg-slate-50 transition-colors">
-                                                <div className="font-bold text-primary mb-1 border-b pb-1">Terkait Data:</div>
-                                                <div className="truncate text-slate-700 font-medium">{msg.context.nama_pemohon || msg.context.judul || 'Data Context'}</div>
-                                            </a>
-                                        )}
-                                        <div className={`rounded-2xl px-4 py-2.5 text-sm shadow-sm ${isMe ? 'bg-primary text-primary-foreground rounded-tr-sm' : 'bg-white text-foreground rounded-tl-sm'}`}>
-                                            {(msg.attachment_path || msg.is_uploading) && (
-                                                <div className="mb-2 relative">
-                                                    {msg.attachment_type?.startsWith('image/') ? (
-                                                        <a href={msg.attachment_path ? `/storage/${msg.attachment_path}` : '#'} target={msg.attachment_path ? "_blank" : undefined} rel="noreferrer" className="block relative">
-                                                            <img src={msg.attachment_path ? `/storage/${msg.attachment_path}` : msg.attachment_preview} alt="Attachment" className={`max-w-[200px] md:max-w-[300px] rounded-lg object-contain border border-white/20 bg-white/5 transition-all ${msg.is_uploading ? 'opacity-50 blur-sm' : ''}`} />
-                                                            {msg.is_uploading && (
-                                                                <div className="absolute inset-0 flex flex-col items-center justify-center">
-                                                                    <Loader2 className="h-8 w-8 text-white animate-spin drop-shadow-md" />
-                                                                    <span className="text-white text-xs font-bold mt-1 drop-shadow-md">{msg.upload_progress}%</span>
-                                                                </div>
-                                                            )}
-                                                        </a>
-                                                    ) : (
-                                                        <a href={msg.attachment_path ? `/storage/${msg.attachment_path}` : '#'} target={msg.attachment_path ? "_blank" : undefined} rel="noreferrer" className={`flex items-center gap-2 p-2 rounded-lg border text-sm hover:opacity-80 transition-all relative overflow-hidden ${isMe ? 'bg-primary-foreground/10 text-white border-white/30' : 'bg-slate-50 border-slate-200 text-slate-800'}`}>
-                                                            {msg.is_uploading && (
-                                                                <div className="absolute left-0 bottom-0 top-0 bg-black/10 transition-all duration-200" style={{ width: `${msg.upload_progress}%` }} />
-                                                            )}
-                                                            <FileText className="h-4 w-4 shrink-0 relative z-10" />
-                                                            <span className="truncate max-w-[150px] relative z-10">{msg.attachment_name || 'Document'}</span>
-                                                            {msg.is_uploading ? (
-                                                                <Loader2 className="h-4 w-4 shrink-0 animate-spin relative z-10 ml-1" />
-                                                            ) : (
-                                                                <Download className="h-4 w-4 shrink-0 opacity-70 ml-1 relative z-10" />
-                                                            )}
-                                                        </a>
-                                                    )}
+                        {/* List Pesan dengan Pemisah Tanggal */}
+                        <div className="flex-1 overflow-y-auto p-4 md:p-6 flex flex-col gap-3">
+                            {(() => {
+                                let lastDateLabel = '';
+                                return messages.map((msg, idx) => {
+                                    const isMe = String(msg.sender_id) === String(user.id) && msg.sender_type === userModelType;
+                                    const currentDateLabel = getDateLabel(msg.created_at);
+                                    const showDateSeparator = currentDateLabel && currentDateLabel !== lastDateLabel;
+                                    if (showDateSeparator) {
+                                        lastDateLabel = currentDateLabel;
+                                    }
+
+                                    return (
+                                        <React.Fragment key={msg.id || `msg-${idx}`}>
+                                            {showDateSeparator && (
+                                                <div className="flex items-center justify-center my-3">
+                                                    <span className="bg-white/90 backdrop-blur border border-slate-200 text-slate-600 text-xs font-semibold px-3 py-1 rounded-full shadow-xs tracking-wide">
+                                                        {currentDateLabel}
+                                                    </span>
                                                 </div>
                                             )}
-                                            {msg.body && <div>{msg.body}</div>}
-                                        </div>
-                                        <span className="text-[10px] text-muted-foreground mx-2 font-medium">
-                                            {msg.created_at ? format(new Date(msg.created_at), 'HH:mm') : ''}
-                                        </span>
-                                    </div>
-                                );
-                            })}
+                                            <div className={`flex flex-col ${isMe ? 'items-end' : 'items-start'} gap-1 max-w-[85%] md:max-w-[70%] ${isMe ? 'self-end' : 'self-start'}`}>
+                                                {msg.context && renderContextCard(msg.context, isMe)}
+                                                <div className={`rounded-2xl px-4 py-2.5 text-sm shadow-sm leading-relaxed ${isMe ? 'bg-primary text-primary-foreground rounded-tr-xs' : 'bg-white text-slate-800 rounded-tl-xs'}`}>
+                                                    {(msg.attachment_path || msg.is_uploading) && (
+                                                        <div className="mb-2 relative">
+                                                            {msg.attachment_type?.startsWith('image/') ? (
+                                                                <a href={msg.attachment_path ? `/storage/${msg.attachment_path}` : '#'} target={msg.attachment_path ? "_blank" : undefined} rel="noreferrer" className="block relative">
+                                                                    <img src={msg.attachment_path ? `/storage/${msg.attachment_path}` : msg.attachment_preview} alt="Attachment" className={`max-w-[200px] md:max-w-[300px] rounded-lg object-contain border border-white/20 bg-white/5 transition-all ${msg.is_uploading ? 'opacity-50 blur-sm' : ''}`} />
+                                                                    {msg.is_uploading && (
+                                                                        <div className="absolute inset-0 flex flex-col items-center justify-center">
+                                                                            <Loader2 className="h-8 w-8 text-white animate-spin drop-shadow-md" />
+                                                                            <span className="text-white text-xs font-bold mt-1 drop-shadow-md">{msg.upload_progress}%</span>
+                                                                        </div>
+                                                                    )}
+                                                                </a>
+                                                            ) : (
+                                                                <a href={msg.attachment_path ? `/storage/${msg.attachment_path}` : '#'} target={msg.attachment_path ? "_blank" : undefined} rel="noreferrer" className={`flex items-center gap-2 p-2 rounded-lg border text-sm hover:opacity-80 transition-all relative overflow-hidden ${isMe ? 'bg-primary-foreground/10 text-white border-white/30' : 'bg-slate-50 border-slate-200 text-slate-800'}`}>
+                                                                    {msg.is_uploading && (
+                                                                        <div className="absolute left-0 bottom-0 top-0 bg-black/10 transition-all duration-200" style={{ width: `${msg.upload_progress}%` }} />
+                                                                    )}
+                                                                    <FileText className="h-4 w-4 shrink-0 relative z-10" />
+                                                                    <span className="truncate max-w-[150px] relative z-10">{msg.attachment_name || 'Document'}</span>
+                                                                    {msg.is_uploading ? (
+                                                                        <Loader2 className="h-4 w-4 shrink-0 animate-spin relative z-10 ml-1" />
+                                                                    ) : (
+                                                                        <Download className="h-4 w-4 shrink-0 opacity-70 ml-1 relative z-10" />
+                                                                    )}
+                                                                </a>
+                                                            )}
+                                                        </div>
+                                                    )}
+                                                    {msg.body && <div>{msg.body}</div>}
+                                                </div>
+                                                <span className="text-[10px] text-slate-500 mx-2 font-medium">
+                                                    {msg.created_at ? format(new Date(msg.created_at), 'HH:mm') : ''}
+                                                </span>
+                                            </div>
+                                        </React.Fragment>
+                                    );
+                                });
+                            })()}
                             <div ref={messagesEndRef} />
                         </div>
 
+                        {/* Input pesan */}
                         <div className="p-3 md:p-4 bg-white border-t shrink-0 flex flex-col gap-2">
                             {(attachment || selectedContext) && (
                                 <div className="flex flex-wrap gap-2">

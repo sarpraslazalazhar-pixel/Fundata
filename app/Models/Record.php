@@ -30,6 +30,30 @@ class Record extends Model
         'revision_count', 'waiting_approval_at', 'is_result_accepted'
     ];
 
+    protected $appends = ['formatted_id', 'judul', 'sub_unit_nama', 'donatur_nama'];
+    protected $with = ['subUnit', 'donatur'];
+
+    public function getSubUnitNamaAttribute()
+    {
+        return $this->subUnit ? $this->subUnit->nama_layanan : null;
+    }
+
+    public function getDonaturNamaAttribute()
+    {
+        if ($this->donatur) {
+            return $this->donatur->nama_lengkap;
+        }
+        if (!empty($this->form_data) && is_array($this->form_data)) {
+            return $this->form_data['nama_donatur'] 
+                ?? $this->form_data['donatur_nama'] 
+                ?? $this->form_data['nama_lengkap']
+                ?? $this->form_data['nama']
+                ?? $this->form_data['nama_pemohon']
+                ?? null;
+        }
+        return null;
+    }
+
     public function getFormattedIdAttribute()
     {
         $id = (string) $this->id;
@@ -68,6 +92,11 @@ class Record extends Model
     public function campaign()
     {
         return $this->belongsTo(Campaign::class, 'campaign_id');
+    }
+
+    public function akad()
+    {
+        return $this->belongsTo(Akad::class, 'akad_id');
     }
 
     public function donatur()

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Head, useForm } from '@inertiajs/react';
+import { Head, Link, useForm } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import { Button } from '@/Components/ui/button';
 import {
@@ -19,7 +19,7 @@ import {
 } from '@/Components/ui/dialog';
 import { Input } from '@/Components/ui/input';
 import { Label } from '@/Components/ui/label';
-import { Plus, Edit, Trash2 } from 'lucide-react';
+import { Plus, Edit, Trash2, History } from 'lucide-react';
 
 interface Akad {
   id: number;
@@ -114,6 +114,11 @@ export default function AkadIndex({ akads, parentOptions }: { akads: Akad[], par
         )}
       </TableCell>
       <TableCell className="text-right space-x-2">
+        <Link href={route('admin.master.akad.log-audit', akad.id)}>
+          <Button variant="outline" size="icon" title="Log Audit (siapa saja yang input)" className="text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50">
+            <History className="h-4 w-4" />
+          </Button>
+        </Link>
         <Button variant="outline" size="icon" title="Edit" onClick={() => openEdit(akad)}>
           <Edit className="h-4 w-4" />
         </Button>
