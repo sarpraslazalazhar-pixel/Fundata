@@ -356,7 +356,7 @@ export default function DashboardIndex({
      <CardHeader className="pb-3 border-b border-slate-100">
       <CardTitle className="text-base font-bold flex items-center gap-2">
        <span className="h-4 w-1 rounded-full bg-indigo-500"></span>
-       Distribusi Donasi per Cabang
+       Distribusi Donasi
       </CardTitle>
      </CardHeader>
      <CardContent className="p-4">
