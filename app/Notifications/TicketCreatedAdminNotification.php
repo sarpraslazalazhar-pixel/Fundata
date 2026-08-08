@@ -5,11 +5,12 @@ namespace App\Notifications;
 use App\Channels\WhatsAppChannel;
 use App\Models\Record;
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Notifications\Messages\BroadcastMessage;
 use Illuminate\Notifications\Notification;
 
-class TicketCreatedAdminNotification extends Notification implements ShouldBroadcast
+class TicketCreatedAdminNotification extends Notification implements ShouldBroadcast, ShouldQueue
 {
     use Queueable;
 

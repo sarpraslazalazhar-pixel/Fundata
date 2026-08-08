@@ -7,6 +7,7 @@ use App\Models\ReminderConfig;
 use App\Models\Record;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\BroadcastMessage;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
@@ -14,7 +15,7 @@ use Illuminate\Queue\SerializesModels;
 use NotificationChannels\WebPush\WebPushChannel;
 use NotificationChannels\WebPush\WebPushMessage;
 
-class PendingTicketReminderNotification extends Notification implements ShouldBroadcast
+class PendingTicketReminderNotification extends Notification implements ShouldBroadcast, ShouldQueue
 {
     use Queueable, SerializesModels;
 

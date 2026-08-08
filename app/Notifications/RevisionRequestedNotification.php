@@ -5,9 +5,10 @@ namespace App\Notifications;
 use App\Channels\WhatsAppChannel;
 use App\Models\Record;
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Notification;
 
-class RevisionRequestedNotification extends Notification
+class RevisionRequestedNotification extends Notification implements ShouldQueue
 {
     use Queueable;
 
