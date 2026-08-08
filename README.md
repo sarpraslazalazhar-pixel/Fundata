@@ -1,6 +1,6 @@
-# Halo APU V2 🚀
+# Fundata 🚀
 
-Halo APU is a modern web application built with the robust Laravel framework on the backend and React + Inertia.js on the frontend. It features a beautiful, responsive user interface styled with Tailwind CSS and Shadcn UI components.
+Fundata is a modern web application built with the robust Laravel framework on the backend and React + Inertia.js on the frontend. It features a beautiful, responsive user interface styled with Tailwind CSS and Shadcn UI components.
 
 ## 🛠️ Technology Stack
 
