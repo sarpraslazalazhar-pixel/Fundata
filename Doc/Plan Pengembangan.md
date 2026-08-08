@@ -11,6 +11,11 @@
 - [x] tombol preview di halaman tinjau
 - [x] tambahkan Nomer kwitansi saat selesai
 - [x] info pin tiket pad tiket
+- [x] ketik untuk donatur
+- [x] notifikasi pada user
+- [x] riwayat chat 7 hari otomatis hapus
+- [x] taut chat
+- [x] tambahkan kolom penimput 
 
 
 

@@ -5,9 +5,11 @@ namespace App\Notifications;
 use App\Channels\WhatsAppChannel;
 use App\Models\Record;
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
+use Illuminate\Notifications\Messages\BroadcastMessage;
 use Illuminate\Notifications\Notification;
 
-class TicketStatusUpdatedNotification extends Notification
+class TicketStatusUpdatedNotification extends Notification implements ShouldBroadcast
 {
     use Queueable;
 
@@ -22,11 +24,16 @@ class TicketStatusUpdatedNotification extends Notification
 
     public function via(object $notifiable): array
     {
-        $channels = ['database', \NotificationChannels\WebPush\WebPushChannel::class];
+        $channels = ['database', 'broadcast', \NotificationChannels\WebPush\WebPushChannel::class];
         if (!empty($notifiable->no_wa)) {
             $channels[] = WhatsAppChannel::class;
         }
         return $channels;
+    }
+
+    public function toBroadcast(object $notifiable): BroadcastMessage
+    {
+        return new BroadcastMessage($this->toArray($notifiable));
     }
 
     public function toWebPush($notifiable, $notification)
@@ -39,8 +46,13 @@ class TicketStatusUpdatedNotification extends Notification
             ->title('Status Tiket Diubah')
             ->icon($iconUrl)
             ->body('Status tiket Anda berubah menjadi ' . $statusStr . '. Catatan: ' . \Illuminate\Support\Str::limit($this->catatan, 50))
-            ->action('Lihat Tiket', route('tiket.show', $this->ticket->id))
-            ->data(['url' => route('tiket.show', $this->ticket->id)]);
+            ->action('Lihat Tiket', route('data.show', $this->ticket->id))
+            ->data(['url' => route('data.show', $this->ticket->id)]);
+    }
+
+    public function toDatabase(object $notifiable): array
+    {
+        return $this->toArray($notifiable);
     }
 
     public function toArray(object $notifiable): array
@@ -50,8 +62,11 @@ class TicketStatusUpdatedNotification extends Notification
             'type' => 'ticket_status_updated',
             'ticket_id' => $this->ticket->id,
             'title' => 'Status Tiket Diubah',
+            'judul' => 'Status Tiket Diubah',
             'message' => 'Status tiket Anda berubah menjadi ' . $statusStr . '. Catatan: ' . $this->catatan,
-            'url' => route('tiket.show', $this->ticket->id),
+            'pesan' => 'Status tiket Anda berubah menjadi ' . $statusStr . '. Catatan: ' . $this->catatan,
+            'url' => route('data.show', $this->ticket->id),
+            'aksi_url' => route('data.show', $this->ticket->id),
         ];
     }
 
@@ -60,7 +75,7 @@ class TicketStatusUpdatedNotification extends Notification
         $layanan = $this->ticket->subUnit->nama_layanan ?? '-';
         $nama = $notifiable->name ?: $notifiable->username;
         $statusStr = ucwords(str_replace('_', ' ', $this->ticket->status));
-        $url = route('tiket.show', $this->ticket->id);
+        $url = route('data.show', $this->ticket->id);
         
         $message = "Halo *{$nama}* 👋\n\n";
         $message .= "Ada info baru nih buat pengajuan Kamu. Statusnya udah di-update ya 😊\n\n";

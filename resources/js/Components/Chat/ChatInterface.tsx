@@ -3,7 +3,7 @@ import { usePage, Head } from '@inertiajs/react';
 import axios from 'axios';
 import { format } from 'date-fns';
 import toast from 'react-hot-toast';
-import { Send, Search, Users, ChevronLeft, Paperclip, FileText, Download, X, Loader2, Link2, Bell, CheckCheck, Check } from 'lucide-react';
+import { Send, Search, Users, ChevronLeft, Paperclip, FileText, Download, X, Loader2, Link2, Bell, CheckCheck, Check, Info } from 'lucide-react';
 import { Button } from '@/Components/ui/button';
 
 // Helper for date formatting in Indonesian
@@ -670,6 +670,16 @@ export default function ChatInterface({ guard }: { guard?: 'user' | 'admin' }) {
                                     <Bell className="h-5 w-5" />
                                 </Button>
                             </div>
+                        </div>
+
+                        {/* Warning Banner */}
+                        <div className="bg-amber-50 border-b border-amber-200 px-4 py-2.5 flex items-center gap-2.5 shrink-0 z-0">
+                            <div className="bg-amber-100 rounded-full p-1 shrink-0">
+                                <Info className="h-4 w-4 text-amber-600" />
+                            </div>
+                            <p className="text-xs text-amber-800 font-medium">
+                                Pesan dan lampiran yang usianya lebih dari 7 hari akan dihapus secara otomatis oleh sistem.
+                            </p>
                         </div>
 
                         {/* List Pesan dengan Pemisah Tanggal */}

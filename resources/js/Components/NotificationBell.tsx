@@ -27,6 +27,9 @@ export default function NotificationBell() {
   const isMutedRef = useRef(isMuted);
   const previousCountRef = useRef<number | null>(null);
 
+  const isAdminPanel = typeof window !== 'undefined' && window.location.pathname.startsWith('/admin');
+  const routePrefix = isAdminPanel ? 'admin.notifications' : 'notifications';
+
   // Sync isMuted state to ref agar tidak stale di dalam interval/callback
   useEffect(() => {
     isMutedRef.current = isMuted;
@@ -52,7 +55,7 @@ export default function NotificationBell() {
 
  const fetchUnreadCount = useCallback(async () => {
  try {
- const response = await axios.get(route('admin.notifications.unread-count'));
+ const response = await axios.get(route(`${routePrefix}.unread-count`));
  const newCount = response.data.unread_count;
 
  // Play sound jika count naik & tidak muted (gunakan ref agar tidak stale)
@@ -63,7 +66,7 @@ export default function NotificationBell() {
  
  // Fetch the latest notification to show in native browser notification
  if ('Notification' in window && Notification.permission === 'granted') {
- axios.get(route('admin.notifications.index'), { params: { per_page: 1 } })
+ axios.get(route(`${routePrefix}.index`), { params: { per_page: 1 } })
  .then(res => {
  const latest = res.data.notifications?.data?.[0];
  if (latest && !latest.read_at) {
@@ -96,7 +99,7 @@ export default function NotificationBell() {
  } catch (error) {
  console.error('Gagal fetch unread count:', error);
  }
- }, [playNotificationSound]);
+ }, [playNotificationSound, routePrefix]);
 
  // Poll setiap 15 detik untuk jumlah notifikasi belum dibaca
  useEffect(() => {
@@ -109,7 +112,7 @@ export default function NotificationBell() {
 
  const fetchRecentNotifications = useCallback(async () => {
  try {
- const response = await axios.get(route('admin.notifications.index'), {
+ const response = await axios.get(route(`${routePrefix}.index`), {
  params: { per_page: 10 },
  headers: { Accept: 'application/json' }
  });
@@ -117,7 +120,7 @@ export default function NotificationBell() {
  } catch (error) {
  console.error('Gagal fetch notifications:', error);
  }
- }, []);
+ }, [routePrefix]);
 
  // Fetch notifikasi terbaru saat dropdown dibuka
  useEffect(() => {
@@ -138,7 +141,7 @@ export default function NotificationBell() {
 
  const handleMarkAsRead = async (id: string) => {
  try {
- await axios.patch(route('admin.notifications.read', { id }));
+ await axios.patch(route(`${routePrefix}.read`, { id }));
  setNotifications(prev =>
  prev.map(n => n.id === id ? { ...n, read_at: new Date().toISOString() } : n)
  );
@@ -150,7 +153,7 @@ export default function NotificationBell() {
 
  const handleSnooze = async (id: string, minutes: number) => {
  try {
- await axios.patch(route('admin.notifications.snooze', { id }), {
+ await axios.patch(route(`${routePrefix}.snooze`, { id }), {
  snooze_minutes: minutes,
  });
  fetchRecentNotifications();
@@ -161,7 +164,7 @@ export default function NotificationBell() {
 
  const handleMarkAllRead = async () => {
  try {
- await axios.post(route('admin.notifications.mark-all-read'));
+ await axios.post(route(`${routePrefix}.mark-all-read`));
  setNotifications(prev =>
  prev.map(n => ({ ...n, read_at: n.read_at || new Date().toISOString() }))
  );
@@ -291,7 +294,7 @@ export default function NotificationBell() {
 
  <div className="p-3 border-t text-center bg-muted/50">
  <a
- href={route('admin.notifications.index')}
+ href={route(`${routePrefix}.index`)}
  className="text-sm text-blue-500 hover:underline inline-flex items-center gap-1"
  >
  Lihat semua notifikasi

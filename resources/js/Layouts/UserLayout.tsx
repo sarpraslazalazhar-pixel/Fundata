@@ -25,6 +25,7 @@ import {
   DropdownMenuTrigger,
 } from "@/Components/ui/dropdown-menu";
 
+import NotificationBell from '@/Components/NotificationBell';
 import ProfileModal from '@/Components/ProfileModal';
 import { BottomNav } from '@/Components/BottomNav';
 import type { BottomNavItem } from '@/Components/BottomNav';
@@ -329,6 +330,8 @@ export default function UserLayout({ children, title }: UserLayoutProps) {
       <div className="flex flex-col min-w-0 overflow-hidden bg-slate-50/40">
         <header className="relative z-40 flex h-14 shrink-0 items-center gap-3 border-b border-slate-200/60 bg-white/80 backdrop-blur-md supports-[backdrop-filter]:bg-white/60 px-4 lg:h-[60px] lg:px-6 shadow-[0_1px_2px_0_rgba(0,0,0,0.02)]">
           <div className="flex-1" />
+
+          <NotificationBell />
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

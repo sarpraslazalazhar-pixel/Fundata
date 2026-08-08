@@ -28,6 +28,7 @@ class DonaturController extends Controller
             'nama_lengkap' => 'required|string|max:255',
             'no_telp' => 'required|string|max:50',
             'alamat' => 'required|string',
+            'email' => 'nullable|email|max:255',
             'jenis_kelamin' => 'nullable|in:L,P',
         ]);
 

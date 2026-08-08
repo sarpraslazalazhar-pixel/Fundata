@@ -24,6 +24,17 @@ const columns = [
  { key: 'sub_unit', header: 'Layanan', render: (t: any) => t.sub_unit?.nama_layanan || '-' },
  { key: 'donatur', header: 'Nama Donatur', render: (t: any) => t.donatur?.nama_lengkap || '-' },
  { key: 'donasi', header: 'Donasi (Rp)', render: (t: any) => t.jumlah_donasi ? new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(Number(t.jumlah_donasi)) : '-' },
+ { key: 'admin', header: 'Kasir', render: (t: any) => {
+      // Prioritize the assigned admin. If none, check the latest log with an admin attached.
+      if (t.assignedAdmin) return t.assignedAdmin.name || t.assignedAdmin.username;
+      if (t.logs && t.logs.length > 0) {
+        // Find the last log that has an admin
+        const adminLogs = [...t.logs].sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+        const lastAdminLog = adminLogs.find((l: any) => l.admin);
+        if (lastAdminLog) return lastAdminLog.admin.name || lastAdminLog.admin.username;
+      }
+      return '-';
+  }},
  { key: 'status', header: 'Status', render: (t: any) => <StatusBadge status={t.status} /> },
  { key: 'created_at', header: 'Tanggal', render: (t: any) => new Date(t.created_at).toLocaleDateString() },
  {
@@ -88,7 +99,7 @@ export default function Riwayat({ records, filters, statuses }: RiwayatProps) {
 
  return (
  <UserLayout title="Riwayat Data">
- <div className="max-w-6xl mx-auto py-8 px-4">
+ <div className="w-full max-w-[1600px] mx-auto py-8 px-4 sm:px-6 lg:px-8">
  <Head title="Riwayat Data" />
 
  <div className="flex justify-between items-center mb-6">

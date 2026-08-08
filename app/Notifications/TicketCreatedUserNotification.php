@@ -39,7 +39,7 @@ class TicketCreatedUserNotification extends Notification implements ShouldBroadc
             'ticket_id' => $this->ticket->id,
             'title' => 'Tiket Baru Berhasil Dibuat',
             'message' => 'Tiket Anda dengan layanan ' . ($this->ticket->subUnit->nama_layanan ?? '-') . ' telah kami terima dan akan segera diproses.',
-            'url' => route('tiket.show', $this->ticket->id),
+            'url' => route('data.show', $this->ticket->id),
         ]);
     }
 
@@ -52,8 +52,8 @@ class TicketCreatedUserNotification extends Notification implements ShouldBroadc
             ->title('Tiket Baru Berhasil Dibuat')
             ->icon($iconUrl)
             ->body('Tiket Anda dengan layanan ' . ($this->ticket->subUnit->nama_layanan ?? '-') . ' telah kami terima dan akan segera diproses.')
-            ->action('Lihat Tiket', route('tiket.show', $this->ticket->id))
-            ->data(['url' => route('tiket.show', $this->ticket->id)]);
+            ->action('Lihat Tiket', route('data.show', $this->ticket->id))
+            ->data(['url' => route('data.show', $this->ticket->id)]);
     }
 
     public function toArray(object $notifiable): array
@@ -63,7 +63,7 @@ class TicketCreatedUserNotification extends Notification implements ShouldBroadc
             'ticket_id' => $this->ticket->id,
             'title' => 'Tiket Baru Berhasil Dibuat',
             'message' => 'Tiket Anda dengan layanan ' . ($this->ticket->subUnit->nama_layanan ?? '-') . ' telah kami terima dan akan segera diproses.',
-            'url' => route('tiket.show', $this->ticket->id),
+            'url' => route('data.show', $this->ticket->id),
         ];
     }
 
@@ -71,7 +71,7 @@ class TicketCreatedUserNotification extends Notification implements ShouldBroadc
     {
         $layanan = $this->ticket->subUnit->nama_layanan ?? '-';
         $nama = $notifiable->name ?: $notifiable->username;
-        $url = route('tiket.show', $this->ticket->id);
+        $url = route('data.show', $this->ticket->id);
         
         $message = "Halo *{$nama}*\n\n";
         $message .= "*{$layanan}* telah terdaftar di sistem ticketing Kami.\n\n";

@@ -54,6 +54,16 @@ Route::middleware('auth')->group(function () {
 
     // User Messaging Page
     Route::get('/pesan', [\App\Http\Controllers\MessageController::class, 'userIndex'])->name('pesan.index');
+
+    // Notifications (User)
+    Route::prefix('notifications')->name('notifications.')->group(function () {
+        Route::get('unread-count', [\App\Http\Controllers\User\NotificationController::class, 'unreadCount'])->name('unread-count');
+        Route::get('/', [\App\Http\Controllers\User\NotificationController::class, 'index'])->name('index');
+        Route::patch('{id}/read', [\App\Http\Controllers\User\NotificationController::class, 'markAsRead'])->name('read');
+        Route::patch('{id}/snooze', [\App\Http\Controllers\User\NotificationController::class, 'snooze'])->name('snooze');
+        Route::patch('{id}/done', [\App\Http\Controllers\User\NotificationController::class, 'markAsDone'])->name('done');
+        Route::post('mark-all-read', [\App\Http\Controllers\User\NotificationController::class, 'markAllAsRead'])->name('mark-all-read');
+    });
 });
 
 // Shared Messaging API (User & Admin)

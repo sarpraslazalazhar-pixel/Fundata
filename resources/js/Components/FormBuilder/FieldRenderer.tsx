@@ -39,7 +39,7 @@ export default function FieldRenderer({ field, value, onChange, errors, paymentM
   
   // State untuk form tambah donatur
   const [addDonaturOpen, setAddDonaturOpen] = useState(false);
-  const [newDonatur, setNewDonatur] = useState({ tipe: 'Individu', nama_lengkap: '', no_telp: '', alamat: '', jenis_kelamin: 'L' });
+  const [newDonatur, setNewDonatur] = useState({ tipe: 'Individu', nama_lengkap: '', no_telp: '', alamat: '', jenis_kelamin: 'L', email: '' });
   const [addDonaturLoading, setAddDonaturLoading] = useState(false);
   const [currentSearchValue, setCurrentSearchValue] = useState('');
   const [selectedDonaturOption, setSelectedDonaturOption] = useState<any>(null);
@@ -379,7 +379,7 @@ export default function FieldRenderer({ field, value, onChange, errors, paymentM
             setSelectedDonaturOption(newOption);
             onChange(field.id, newOption.value);
             setAddDonaturOpen(false);
-            setNewDonatur({ tipe: 'Individu', nama_lengkap: '', no_telp: '', alamat: '', jenis_kelamin: 'L' });
+            setNewDonatur({ tipe: 'Individu', nama_lengkap: '', no_telp: '', alamat: '', jenis_kelamin: 'L', email: '' });
             Swal.fire({
               icon: 'success',
               title: 'Berhasil',
@@ -415,7 +415,7 @@ export default function FieldRenderer({ field, value, onChange, errors, paymentM
                 onChange(field.id, selectedOption ? selectedOption.value : null);
               }}
               onInputChange={(inputValue) => setCurrentSearchValue(inputValue)}
-              placeholder="Ketik untuk mencari donatur..."
+              placeholder="Ketik untuk mencari dan menambahkan donatur..."
               isClearable
               className="text-sm"
               classNames={{
@@ -493,6 +493,15 @@ export default function FieldRenderer({ field, value, onChange, errors, paymentM
                       value={newDonatur.no_telp}
                       onChange={e => setNewDonatur({...newDonatur, no_telp: e.target.value})}
                       required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Email</Label>
+                    <input
+                      type="email"
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
+                      value={newDonatur.email}
+                      onChange={e => setNewDonatur({...newDonatur, email: e.target.value})}
                     />
                   </div>
                   <div className="space-y-2">

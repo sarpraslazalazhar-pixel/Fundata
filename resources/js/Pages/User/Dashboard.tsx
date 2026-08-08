@@ -60,7 +60,7 @@ export default function Dashboard({
  {timeGreeting()}, <span className="text-primary">{user?.name || user?.username || 'User'}</span>
  </h1>
  <p className="text-sm text-muted-foreground">
- Semangat beramal hari ini! Berikut adalah ringkasan performa Anda.
+ Semangat menghimpun ya guys. Berikut ringkasan performa Anda.
  </p>
  </div>
  <div className="flex items-center gap-2 bg-white p-1 rounded-lg border shadow-sm">
@@ -94,7 +94,7 @@ export default function Dashboard({
  <div className="absolute -top-4 -right-4 h-24 w-24 rounded-full bg-white/20 blur-xl pointer-events-none transition-transform duration-500 group-hover:scale-150" />
  <div className="flex items-start justify-between">
  <div className="space-y-2">
- <p className="text-sm font-medium text-blue-100">Jumlah Data (Tiket)</p>
+ <p className="text-sm font-medium text-blue-100">Total Transaksi</p>
  <p className="text-3xl font-bold tracking-tight">{totalData} <span className="text-lg font-medium opacity-80 text-blue-200">Data</span></p>
  </div>
  <Target className="h-8 w-8 text-white opacity-70 group-hover:scale-110 transition-transform" />
@@ -105,7 +105,7 @@ export default function Dashboard({
  <div className="absolute -top-4 -right-4 h-24 w-24 rounded-full bg-white/20 blur-xl pointer-events-none transition-transform duration-500 group-hover:scale-150" />
  <div className="flex items-start justify-between">
  <div className="space-y-2">
- <p className="text-sm font-medium text-amber-100">Peringkat di Cabang</p>
+ <p className="text-sm font-medium text-amber-100">Peringkat</p>
  <div className="flex items-baseline gap-2">
  <p className="text-3xl font-bold tracking-tight">#{peringkat || '-'}</p>
  <span className="text-sm font-medium opacity-80 text-amber-100">dari {totalOrangCabang} Amil</span>
@@ -232,7 +232,7 @@ export default function Dashboard({
  <Card className="shadow-sm">
  <CardHeader>
  <CardTitle className="text-base font-semibold text-slate-800">
- Leaderboard Cabang
+ Leaderboard
  </CardTitle>
  </CardHeader>
  <CardContent className="p-0">

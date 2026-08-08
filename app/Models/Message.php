@@ -36,4 +36,15 @@ class Message extends Model
     {
         return $this->morphTo();
     }
+
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::deleting(function ($message) {
+            if ($message->attachment_path && \Illuminate\Support\Facades\Storage::disk('public')->exists($message->attachment_path)) {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($message->attachment_path);
+            }
+        });
+    }
 }
