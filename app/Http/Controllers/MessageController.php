@@ -62,8 +62,13 @@ class MessageController extends Controller
         })->orWhere(function ($query) use ($currentUser, $currentType) {
             $query->where('participant_two_type', $currentType)
                   ->where('participant_two_id', $currentUser->id);
-        })->with(['messages' => function ($q) {
-            $q->orderBy('created_at', 'desc');
+        })->with('lastMessage')
+        ->withCount(['messages as unread_count' => function ($query) use ($currentUser, $currentType) {
+            $query->where('is_read', false)
+                  ->where(function ($q) use ($currentUser, $currentType) {
+                      $q->where('sender_type', '!=', $currentType)
+                        ->orWhere('sender_id', '!=', $currentUser->id);
+                  });
         }])->get();
 
         $convMap = [];
@@ -73,13 +78,13 @@ class MessageController extends Controller
             $otherId = $isOne ? $conv->participant_two_id : $conv->participant_one_id;
 
             $key = $otherType . ':' . $otherId;
-            $lastMsg = $conv->messages->first();
-            $unreadCount = $conv->messages->where('sender_type', $otherType)->where('sender_id', $otherId)->where('is_read', false)->count();
+            $lastMsg = $conv->lastMessage;
+            $unreadCount = $conv->unread_count;
 
             $convMap[$key] = [
                 'last_message' => $lastMsg ? ($lastMsg->body ?: ($lastMsg->attachment_path ? '[Lampiran]' : '')) : '',
                 'last_message_at' => $lastMsg ? $lastMsg->created_at->toISOString() : null,
-                'unread_count' => $unreadCount,
+                'unread_count' => (int) $unreadCount,
             ];
         }
 
