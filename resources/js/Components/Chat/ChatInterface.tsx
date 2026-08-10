@@ -678,7 +678,7 @@ export default function ChatInterface({ guard }: { guard?: 'user' | 'admin' }) {
                                 <Info className="h-4 w-4 text-amber-600" />
                             </div>
                             <p className="text-xs text-amber-800 font-medium">
-                                Pesan dan lampiran yang usianya lebih dari 7 hari akan dihapus secara otomatis oleh sistem.
+                                Pesan dan lampiran yang lebih dari 7 hari akan dihapus secara otomatis oleh sistem.
                             </p>
                         </div>
 

@@ -88,12 +88,27 @@ class MessageController extends Controller
             ];
         }
 
+        // Filter active users based on conversations
+        $activeUserIds = [];
+        $activeAdminIds = [];
+        foreach ($conversations as $conv) {
+            $isOne = ($conv->participant_one_type === $currentType && $conv->participant_one_id == $currentUser->id);
+            $otherType = $isOne ? $conv->participant_two_type : $conv->participant_one_type;
+            $otherId = $isOne ? $conv->participant_two_id : $conv->participant_one_id;
+
+            if ($otherType === User::class) {
+                $activeUserIds[] = $otherId;
+            } elseif ($otherType === Admin::class) {
+                $activeAdminIds[] = $otherId;
+            }
+        }
+
         // Jika yang login adalah User biasa, dia TIDAK BOLEH melihat User lain di kontaknya (hanya bisa chat ke Admin)
         if ($currentType === User::class) {
             $users = collect([]);
         } else {
-            // Jika yang login adalah Admin, dia bisa melihat semua User
-            $users = User::get(['id', 'name', 'username', 'avatar_path'])->map(function($user) {
+            // Jika yang login adalah Admin, HANYA muat user yang sudah ada percakapan (menghindari lambat jika user ribuan)
+            $users = User::whereIn('id', $activeUserIds)->get(['id', 'name', 'username', 'avatar_path'])->map(function($user) {
                 $user->type = 'user';
                 $user->model_type = User::class;
                 if (empty($user->name)) {
@@ -103,7 +118,7 @@ class MessageController extends Controller
             });
         }
 
-        // Get Admins
+        // Get Admins (Selalu tampilkan semua admin karena jumlahnya sedikit)
         $admins = Admin::when($currentType === Admin::class, function($q) use ($currentUser) {
             return $q->where('id', '!=', $currentUser->id);
         })->get(['id', 'name', 'username', 'avatar_path'])->map(function($admin) {

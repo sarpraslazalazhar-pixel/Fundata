@@ -60,7 +60,7 @@ export default function Dashboard({
  {timeGreeting()}, <span className="text-primary">{user?.name || user?.username || 'User'}</span>
  </h1>
  <p className="text-sm text-muted-foreground">
- Semangat menghimpun ya guys. Berikut ringkasan performa Anda.
+ Semangat menghimpun ya guys. Berikut ringkasan performa kamu.
  </p>
  </div>
  <div className="flex items-center gap-2 bg-white p-1 rounded-lg border shadow-sm">

@@ -16,6 +16,7 @@
 - [x] riwayat chat 7 hari otomatis hapus
 - [x] taut chat
 - [x] tambahkan kolom penimput 
+- [ ] input data &  Request akun
 
 
 
