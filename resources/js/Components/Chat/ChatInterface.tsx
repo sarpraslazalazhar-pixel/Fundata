@@ -206,6 +206,7 @@ export default function ChatInterface({ guard }: { guard?: 'user' | 'admin' }) {
 
     // When activeChat changes, fetch messages and mark as read
     useEffect(() => {
+        setContextOptions([]);
         if (activeChat) {
             fetchMessages(activeChat);
             markAsRead(activeChat);
@@ -366,7 +367,11 @@ export default function ChatInterface({ guard }: { guard?: 'user' | 'admin' }) {
         if (contextOptions.length === 0) {
             setLoadingContext(true);
             try {
-                const res = await axios.get(`/api/messages/context-options?sender_type=${userModelType === 'App\\Models\\Admin' ? 'admin' : 'user'}`);
+                let url = `/api/messages/context-options?sender_type=${userModelType === 'App\\Models\\Admin' ? 'admin' : 'user'}`;
+                if (activeChat) {
+                    url += `&receiver_id=${activeChat.id}&receiver_type=${encodeURIComponent(activeChat.model_type)}`;
+                }
+                const res = await axios.get(url);
                 setContextOptions(res.data);
             } catch (error) {
                 console.error(error);
@@ -486,7 +491,7 @@ export default function ChatInterface({ guard }: { guard?: 'user' | 'admin' }) {
                             ) : contextOptions.length === 0 ? (
                                 <div className="text-center py-8 text-muted-foreground flex flex-col items-center gap-2">
                                     <FileText className="h-8 w-8 text-slate-300" />
-                                    <p>Tidak ada data ditemukan.</p>
+                                    <p>{activeChat?.name ? `Tidak ada data tiket untuk ${activeChat.name}.` : 'Tidak ada data ditemukan.'}</p>
                                 </div>
                             ) : (
                                 <div className="flex flex-col gap-2">

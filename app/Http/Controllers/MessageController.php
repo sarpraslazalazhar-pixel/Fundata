@@ -330,10 +330,17 @@ class MessageController extends Controller
         $currentUser = $this->getCurrentUser($request);
         $currentType = $this->getCurrentType($request);
 
+        $receiverId = $request->query('receiver_id') ?? $request->input('receiver_id');
+        $receiverType = $request->query('receiver_type') ?? $request->input('receiver_type');
+
         $query = Record::with(['unit', 'subUnit.unit', 'donatur'])->orderBy('created_at', 'desc')->limit(50);
 
         if ($currentType === User::class) {
             $query->where('user_id', $currentUser->id);
+        } else if ($receiverType === User::class || $receiverType === 'App\\Models\\User' || $receiverType === 'user') {
+            if ($receiverId) {
+                $query->where('user_id', $receiverId);
+            }
         }
 
         $records = $query->get();
