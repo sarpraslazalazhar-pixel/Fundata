@@ -746,11 +746,9 @@ export default function ChatInterface({ guard }: { guard?: 'user' | 'admin' }) {
                                                         {msg.created_at ? format(new Date(msg.created_at), 'HH:mm') : ''}
                                                     </span>
                                                     {isMe && (
-                                                        msg.is_read ? (
-                                                            <CheckCheck className="h-3.5 w-3.5 text-sky-500 shrink-0" title="Sudah dibaca" />
-                                                        ) : (
-                                                            <CheckCheck className="h-3.5 w-3.5 text-slate-400 shrink-0" title="Terkirim (Belum dibaca)" />
-                                                        )
+                                                        <span title={msg.is_read ? "Sudah dibaca" : "Terkirim (Belum dibaca)"}>
+                                                            <CheckCheck className={`h-3.5 w-3.5 shrink-0 ${msg.is_read ? 'text-sky-500' : 'text-slate-400'}`} />
+                                                        </span>
                                                     )}
                                                 </div>
                                             </div>
