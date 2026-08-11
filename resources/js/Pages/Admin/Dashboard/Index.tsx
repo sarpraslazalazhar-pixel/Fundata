@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Head, router } from '@inertiajs/react';
+import { format } from 'date-fns';
 import AdminLayout from '@/Layouts/AdminLayout';
 import { StatusBadge } from '@/Components/StatusBadge';
 import { Button } from '@/Components/ui/button';
@@ -194,8 +195,15 @@ export default function DashboardIndex({
            <span className="shrink-0 rounded-md bg-amber-100 px-2 py-1 font-mono font-semibold text-amber-800">#DAT-{formatTicketId(t.id)}</span>
            <StatusBadge status={t.status} />
            <div className="min-w-0">
-            <span className="block truncate font-medium text-slate-900">{t.user?.name || t.user?.username || '-'}</span>
-            <span className="block truncate text-xs text-slate-500">{t.unit?.nama_unit}{t.sub_unit ? ` / ${t.sub_unit.nama_layanan}` : ''}</span>
+            <span className="block truncate font-medium text-slate-900">{t.donatur?.nama_lengkap || t.user?.name || t.user?.username || '-'}</span>
+            <span className="block truncate text-xs text-slate-500">
+             {t.unit?.nama_unit}{t.sub_unit ? ` / ${t.sub_unit.nama_layanan}` : ''}
+             {t.created_at && (
+              <span className="ml-2 text-[11px] text-amber-700/80 font-medium">
+               &bull; {format(new Date(t.created_at), 'dd MMM yyyy, HH:mm')}
+              </span>
+             )}
+            </span>
            </div>
           </div>
           <div className="flex items-center gap-3 shrink-0">

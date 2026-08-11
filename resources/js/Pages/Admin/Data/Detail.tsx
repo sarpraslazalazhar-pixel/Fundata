@@ -118,7 +118,11 @@ export default function TicketDetail({ ticket, formFields, operators, akads, pay
  <Button variant="outline" size="sm" onClick={() => router.get(route('admin.data.index'))}>
  <ArrowLeft className="w-4 h-4 mr-1" /> Kembali
  </Button>
- <Button variant="default" size="sm" onClick={() => router.get(route('admin.pesan.index'), { context_id: ticket.id, context_title: ticket.judul || ticket.nama_pemohon || `Tiket #${formatTicketId(ticket.id)}` })}>
+ <Button variant="default" size="sm" onClick={() => {
+    const donaturName = ticket.donatur?.nama_lengkap || ticket.donatur_nama || ticket.form_data?.nama_donatur || ticket.form_data?.donatur_nama || ticket.form_data?.nama_lengkap || ticket.nama_pemohon || '';
+    const formattedTitle = donaturName ? `Tiket #${formatTicketId(ticket.id)} - ${donaturName}` : `Tiket #${formatTicketId(ticket.id)} - ${ticket.judul || 'Pengajuan'}`;
+    router.get(route('admin.pesan.index'), { context_id: ticket.id, context_title: formattedTitle });
+  }}>
  <MessageSquareShare className="h-4 w-4 mr-1" /> Tanyakan Data Ini
  </Button>
  <h1 className="text-2xl font-bold flex items-center gap-3">

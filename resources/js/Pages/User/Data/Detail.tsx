@@ -111,9 +111,13 @@ export default function Detail({ ticket, formFields, maxRevisions, akads, paymen
  <p className="text-slate-500 mt-1">Dibuat pada {formatDateId(ticket.created_at)}</p>
  </div>
  <div className="flex items-center gap-2">
- <Button variant="default" onClick={() => router.get(route('pesan.index'), { context_id: ticket.id, context_title: ticket.judul || ticket.nama_pemohon || `Tiket #${formatTicketId(ticket.id)}` })}>
- <MessageSquareShare className="h-4 w-4 mr-1" /> Tanyakan Data Ini
- </Button>
+  <Button variant="default" onClick={() => {
+    const donaturName = ticket.donatur?.nama_lengkap || ticket.donatur_nama || ticket.form_data?.nama_donatur || ticket.form_data?.donatur_nama || ticket.form_data?.nama_lengkap || ticket.nama_pemohon || '';
+    const formattedTitle = donaturName ? `Tiket #${formatTicketId(ticket.id)} - ${donaturName}` : `Tiket #${formatTicketId(ticket.id)} - ${ticket.judul || 'Pengajuan'}`;
+    router.get(route('pesan.index'), { context_id: ticket.id, context_title: formattedTitle });
+  }}>
+   <MessageSquareShare className="h-4 w-4 mr-1" /> Tanyakan Data Ini
+  </Button>
 
  {canCancel && (
  <Button variant="destructive" onClick={() => setShowConfirm(true)}>

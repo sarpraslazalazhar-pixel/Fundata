@@ -102,9 +102,10 @@ class DashboardController extends Controller
                 ->get();
 
             // ── Data Perlu Ditindak Lanjuti ──
-            $followUpTickets = Record::with(['user.divisi', 'unit', 'subUnit'])
+            $followUpTickets = Record::with(['user.divisi', 'unit', 'subUnit', 'donatur'])
                 ->whereIn('status', ['open', 'pending'])
-                ->latest()
+                ->orderBy('created_at', 'desc')
+                ->orderBy('id', 'desc')
                 ->limit(10)
                 ->get();
 

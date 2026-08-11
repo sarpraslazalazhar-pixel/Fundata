@@ -36,6 +36,20 @@
             }
           },
           {
+            "id": "24a96e572e09365a",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "Plan Pengembangan.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "Plan Pengembangan"
+            }
+          },
+          {
             "id": "d672032093748603",
             "type": "leaf",
             "state": {
@@ -78,7 +92,7 @@
             }
           }
         ],
-        "currentTab": 1
+        "currentTab": 2
       }
     ],
     "direction": "vertical"
@@ -245,10 +259,11 @@
       "bases:Create new base": false
     }
   },
-  "active": "cf175e46c87dd247",
+  "active": "24a96e572e09365a",
   "lastOpenFiles": [
-    "ai video.md",
+    "review.md",
     "Plan Pengembangan.md",
+    "ai video.md",
     "Dokumentasi Aplikasi.md",
     "PRD.md",
     "Zakat.md",

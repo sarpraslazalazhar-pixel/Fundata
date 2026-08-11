@@ -766,7 +766,11 @@ export default function ChatInterface({ guard }: { guard?: 'user' | 'admin' }) {
                                     {selectedContext && (
                                         <div className="flex items-center gap-2 bg-blue-50 text-blue-700 p-2 rounded-lg border border-blue-200 w-max max-w-full">
                                             <Link2 className="h-4 w-4 shrink-0" />
-                                            <span className="text-sm font-medium truncate flex-1">{selectedContext.title}</span>
+                                            <span className="text-sm font-medium truncate flex-1">
+                                                {selectedContext.ticket_number
+                                                    ? `${selectedContext.ticket_number}${selectedContext.donatur_name ? ` - ${selectedContext.donatur_name}` : ''}`
+                                                    : selectedContext.title}
+                                            </span>
                                             <button type="button" onClick={() => setSelectedContext(null)} className="text-blue-500 hover:bg-blue-200 rounded p-0.5 ml-2 transition-colors">
                                                 <X className="h-4 w-4" />
                                             </button>
