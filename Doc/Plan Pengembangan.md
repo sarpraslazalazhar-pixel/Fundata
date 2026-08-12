@@ -16,8 +16,11 @@
 - [x] riwayat chat 7 hari otomatis hapus
 - [x] taut chat
 - [x] tambahkan kolom penimput 
-- [ ] input data &  Request akun
-- [ ] 3 di dasbor admin yang paling baru
+- [x] input data &  Request akun
+- [x] 3 di dasbor admin yang paling baru
+- [x] tanda notif pesan
+- [x] Dashboard Void (Total nominal void, Jumlah, list fudraiser pungaku void)
+- [x] role manager (approve/reject)
 
 
 

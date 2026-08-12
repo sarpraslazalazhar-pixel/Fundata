@@ -33,6 +33,7 @@ interface AuditRecord {
   user: { id: number; name: string; username: string; divisi: string | null; org_unit: string | null } | null;
   donatur: string | null;
   jumlah_donasi: number | null;
+  nominal_void?: number | null;
   status: string;
   campaign: string | null;
   akad: string | null;
@@ -155,7 +156,15 @@ export default function LogAuditShow({
       ),
     },
     { key: 'donatur', header: 'Donatur', render: (t: AuditRecord) => t.donatur || '-' },
-    { key: 'jumlah_donasi', header: 'Nominal', render: (t: AuditRecord) => (t.jumlah_donasi ? <span className="font-semibold text-emerald-700">{rupiah(t.jumlah_donasi)}</span> : '-') },
+    { key: 'jumlah_donasi', header: 'Nominal', render: (t: AuditRecord) => (
+      t.jumlah_donasi ? (
+        <span className="font-semibold text-emerald-700">{rupiah(t.jumlah_donasi)}</span>
+      ) : (
+        t.nominal_void ? (
+          <span className="font-semibold text-rose-600">({rupiah(t.nominal_void)})</span>
+        ) : '-'
+      )
+    ) },
     { key: 'status', header: 'Status', render: (t: AuditRecord) => <StatusBadge status={t.status} /> },
     ...(entityType === 'akad'
       ? [{ key: 'campaign', header: 'Campaign', render: (t: AuditRecord) => t.campaign || <span className="text-slate-400">-</span> }]

@@ -1,2 +1,0 @@
-- Infak Umum
-- Infak Khusus

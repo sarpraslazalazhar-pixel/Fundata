@@ -19,6 +19,7 @@ import {
   Sparkles,
   MessageSquare,
   ChevronsUpDown,
+  AlertTriangle,
 } from 'lucide-react';
 import { Button } from '@/Components/ui/button';
 import { Sheet, SheetContent } from '@/Components/ui/sheet';
@@ -68,6 +69,7 @@ function isRouteActive(url: string, routePath?: string): boolean {
 const adminNavItems: NavItem[] = [
   { type: 'link', label: 'Dashboard', icon: LayoutDashboard, route: '/admin/dashboard' },
   { type: 'link', label: 'Verifikasi Data', icon: Ticket, route: '/admin/verifikasi-data' },
+  { type: 'link', label: 'Dashboard Void', icon: AlertTriangle, route: '/admin/void', permissionGroup: 'akses-void-approval' },
   { type: 'link', label: 'Pesan', icon: MessageSquare, route: '/admin/pesan' },
 
   { type: 'header', label: 'PENGATURAN', permissionGroup: 'akses-konfigurasi' },
@@ -121,8 +123,9 @@ const adminNavItems: NavItem[] = [
 ];
 
 /* ─── Premium NavLink with sliding active pill ─── */
-function NavLink({ item, active, isCollapsed }: { item: NavItem; active: boolean; isCollapsed: boolean }) {
+function NavLink({ item, active, isCollapsed, unreadCount }: { item: NavItem; active: boolean; isCollapsed: boolean; unreadCount?: number }) {
   const Icon = item.icon;
+  const hasBadge = unreadCount !== undefined && unreadCount > 0 && (item.route === '/admin/pesan' || item.label === 'Pesan');
 
   return (
     <motion.div
@@ -152,13 +155,29 @@ function NavLink({ item, active, isCollapsed }: { item: NavItem; active: boolean
         )}
 
         <div className={`relative z-10 flex items-center ${isCollapsed ? 'justify-center' : 'gap-3 w-full'}`}>
-          <motion.div
-            animate={active ? { scale: 1.12 } : { scale: 1 }}
-            transition={{ type: 'spring', stiffness: 500, damping: 20 }}
-          >
-            <Icon className={`h-4 w-4 shrink-0 transition-colors duration-200 ${active ? 'text-primary' : 'group-hover:text-slate-700'}`} />
-          </motion.div>
+          <div className="relative">
+            <motion.div
+              animate={active ? { scale: 1.12 } : { scale: 1 }}
+              transition={{ type: 'spring', stiffness: 500, damping: 20 }}
+            >
+              <Icon className={`h-4 w-4 shrink-0 transition-colors duration-200 ${active ? 'text-primary' : 'group-hover:text-slate-700'}`} />
+            </motion.div>
+            {isCollapsed && hasBadge && (
+              <span className="absolute -top-1.5 -right-1.5 flex h-3 w-3 items-center justify-center">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500 ring-2 ring-white" />
+              </span>
+            )}
+          </div>
           {!isCollapsed && <span className="truncate">{item.label}</span>}
+          {!isCollapsed && hasBadge && (
+            <span className="relative ml-auto flex items-center justify-center">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
+              <span className="relative flex h-5 min-w-[20px] items-center justify-center rounded-full bg-red-500 px-1.5 text-[10px] font-bold text-white shadow-xs">
+                {unreadCount > 99 ? '99+' : unreadCount}
+              </span>
+            </span>
+          )}
         </div>
       </Link>
     </motion.div>
@@ -357,6 +376,23 @@ export default function AdminLayout({ children, title }: AdminLayoutProps) {
   const { subscribe } = useWebPush(admin);
   const sidebarScrollRef = useRef<HTMLDivElement>(null);
 
+  const [unreadMessagesCount, setUnreadMessagesCount] = useState<number>(() => auth?.unread_messages_count || 0);
+
+  useEffect(() => {
+    setUnreadMessagesCount(auth?.unread_messages_count || 0);
+  }, [auth?.unread_messages_count]);
+
+  useEffect(() => {
+    const handleMessagesRead = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      if (customEvent.detail && typeof customEvent.detail.unreadCount === 'number') {
+        setUnreadMessagesCount(customEvent.detail.unreadCount);
+      }
+    };
+    window.addEventListener('messages-read', handleMessagesRead);
+    return () => window.removeEventListener('messages-read', handleMessagesRead);
+  }, []);
+
   const soundUrl = appConfig?.notification_sound_path
     ? `/system/notification-sound?v=${encodeURIComponent(appConfig.notification_sound_path)}`
     : '/sounds/ting-ting-ting.wav';
@@ -467,6 +503,16 @@ export default function AdminLayout({ children, title }: AdminLayoutProps) {
             });
           }
           toast.success(notification.title || 'Pemberitahuan Baru', { id: `notif-${Date.now()}` });
+        })
+        .listen('MessageSent', (e: any) => {
+          const isChatPage = window.location.pathname === '/pesan' || window.location.pathname === '/admin/pesan';
+          if (!isChatPage) {
+            setUnreadMessagesCount(prev => prev + 1);
+            playNotificationSound();
+            toast.success(`Pesan baru dari ${e.message.sender?.name || 'Pengguna'}: ${e.message.body || '[Lampiran]'}`, {
+              id: `msg-${e.message.id || Date.now()}`
+            });
+          }
         });
 
       return () => {
@@ -585,6 +631,7 @@ export default function AdminLayout({ children, title }: AdminLayoutProps) {
                 item={item}
                 active={isActive(item.route!)}
                 isCollapsed={collapsed}
+                unreadCount={unreadMessagesCount}
               />
             );
           })}
@@ -636,7 +683,16 @@ export default function AdminLayout({ children, title }: AdminLayoutProps) {
   const bottomNavItems: BottomNavItem[] = [
     { label: 'Dashboard', icon: LayoutDashboard, route: '/admin/dashboard' },
     { label: 'Verifikasi', icon: Ticket, route: '/admin/verifikasi-data' },
-    { label: 'Pesan', icon: MessageSquare, route: '/admin/pesan' },
+    {
+      label: 'Pesan',
+      icon: MessageSquare,
+      route: '/admin/pesan',
+      badge: unreadMessagesCount > 0 ? (
+        <span className="flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-bold text-white shadow-xs">
+          {unreadMessagesCount > 99 ? '99+' : unreadMessagesCount}
+        </span>
+      ) : undefined
+    },
     { label: 'Lainnya', icon: MoreHorizontal, onClick: () => setSidebarOpen(true) },
   ];
 
@@ -713,7 +769,7 @@ export default function AdminLayout({ children, title }: AdminLayoutProps) {
                 Ubah Profil
               </DropdownMenuItem>
               <DropdownMenuItem className="p-0">
-                <Link href="/logout" method="post" as="button" className="flex items-center w-full px-2 py-1.5 text-sm text-red-600 hover:text-red-700">
+                <Link href={route('admin.logout')} method="post" as="button" className="flex items-center w-full px-2 py-1.5 text-sm text-red-600 hover:text-red-700">
                   <LogOut className="h-4 w-4 mr-2" />
                   Keluar
                 </Link>

@@ -29,8 +29,15 @@ class DataVerificationController extends Controller
             } else {
                 $query->where(function($q) use ($admin) {
                     $subUnitIds = $admin->subUnits()->pluck('sub_units.id')->toArray();
-                    $q->whereIn('sub_unit_id', $subUnitIds)
-                      ->orWhere('assigned_admin_id', $admin->id);
+                    if ($admin->hasPermissionTo('akses-void-approval')) {
+                        // Manajer void selalu bisa melihat tiket yang menunggu persetujuan
+                        $q->where('status', 'menunggu_manager')
+                          ->orWhereIn('sub_unit_id', $subUnitIds)
+                          ->orWhere('assigned_admin_id', $admin->id);
+                    } else {
+                        $q->whereIn('sub_unit_id', $subUnitIds)
+                          ->orWhere('assigned_admin_id', $admin->id);
+                    }
                 });
             }
         }
@@ -45,7 +52,7 @@ class DataVerificationController extends Controller
             $statuses = is_array($request->status) ? $request->status : [$request->status];
             $query->whereIn('status', $statuses);
         } else {
-            $query->whereIn('status', ['open', 'on_proses', 'pending', 'waiting_approval', 'need_revision']);
+            $query->whereIn('status', ['open', 'on_proses', 'pending', 'waiting_approval', 'need_revision', 'menunggu_manager']);
         }
         if ($request->filled('date_from')) {
             $query->whereDate('created_at', '>=', $request->date_from);
@@ -149,6 +156,10 @@ class DataVerificationController extends Controller
         $newStatus = $request->status;
         $oldStatus = $record->status;
 
+        if ($oldStatus === 'menunggu_manager') {
+            return redirect()->back()->with('error', 'Tiket ini sedang menunggu persetujuan Manajer dan tidak bisa diproses.');
+        }
+
         if (!isset($validTransitions[$oldStatus]) || !in_array($newStatus, $validTransitions[$oldStatus])) {
             return redirect()->back()->with('error', 'Transisi status tidak valid.');
         }
@@ -163,6 +174,8 @@ class DataVerificationController extends Controller
         }
 
         $record->update($updateData);
+
+        $this->forgetDashboardCache($record);
 
         if ($record->booking) {
             $record->booking->update(['status' => $newStatus]);
@@ -236,6 +249,10 @@ class DataVerificationController extends Controller
 
     public function updatePriority(Request $request, Record $record)
     {
+        if ($record->status === 'menunggu_manager') {
+            return redirect()->back()->with('error', 'Tiket ini sedang menunggu persetujuan Manajer dan tidak bisa diproses.');
+        }
+
         $request->validate([
             'priority' => 'required|string|in:Rendah,Sedang,Tinggi,Urgen',
         ]);
@@ -283,6 +300,10 @@ class DataVerificationController extends Controller
 
     public function assignOperator(Request $request, Record $record)
     {
+        if ($record->status === 'menunggu_manager') {
+            return redirect()->back()->with('error', 'Tiket ini sedang menunggu persetujuan Manajer dan tidak bisa ditugaskan.');
+        }
+
         $admin = auth('admin')->user();
         if (!$admin->hasRole('Super Admin') && !$admin->hasPermissionTo('akses-assign-operator')) {
             abort(403, 'Anda tidak memiliki hak akses untuk menugaskan operator.');
@@ -308,6 +329,90 @@ class DataVerificationController extends Controller
         ]);
 
         return redirect()->back()->with('success', 'Operator berhasil ditugaskan.');
+    }
+
+    private function forgetDashboardCache(Record $record): void
+    {
+        if (!$record->created_at) return;
+        \Illuminate\Support\Facades\Cache::forget("admin_dashboard_data_{$record->created_at->year}_{$record->created_at->month}");
+    }
+
+    public function approveVoid(Request $request, Record $record)
+    {
+        $admin = auth('admin')->user();
+        if (!$admin->hasRole('Super Admin') && !$admin->hasPermissionTo('akses-void-approval')) {
+            abort(403, 'Anda tidak memiliki hak akses untuk menyetujui void.');
+        }
+
+        if ($record->status !== 'menunggu_manager') {
+            return redirect()->back()->with('error', 'Tiket ini tidak sedang menunggu persetujuan Manajer.');
+        }
+
+        $record->update(['status' => 'open']);
+
+        RecordLog::create([
+            'ticket_id' => $record->id,
+            'admin_id' => auth('admin')->id(),
+            'aksi' => 'void_approved',
+            'catatan' => 'Void disetujui oleh Manajer',
+        ]);
+
+        $this->forgetDashboardCache($record);
+
+        // ponytail: defer user notification to run after response
+        defer(function () use ($record) {
+            try {
+                $record->load('user', 'subUnit');
+                if ($record->user) {
+                    $record->user->notify(new TicketStatusUpdatedNotification($record, 'Transaksi void Anda telah disetujui Manajer dan diteruskan ke Kasir.'));
+                }
+            } catch (\Exception $e) {
+                \Log::error("Gagal mengirim notifikasi void approved tiket #{$record->id}: " . $e->getMessage());
+            }
+        });
+
+        return redirect()->back()->with('success', 'Transaksi Void telah disetujui dan diteruskan ke Kasir.');
+    }
+
+    public function rejectVoid(Request $request, Record $record)
+    {
+        $admin = auth('admin')->user();
+        if (!$admin->hasRole('Super Admin') && !$admin->hasPermissionTo('akses-void-approval')) {
+            abort(403, 'Anda tidak memiliki hak akses untuk menolak void.');
+        }
+
+        if ($record->status !== 'menunggu_manager') {
+            return redirect()->back()->with('error', 'Tiket ini tidak sedang menunggu persetujuan Manajer.');
+        }
+
+        $request->validate([
+            'catatan' => 'required|string|max:500',
+        ]);
+
+        $record->update(['status' => 'reject']);
+
+        RecordLog::create([
+            'ticket_id' => $record->id,
+            'admin_id' => auth('admin')->id(),
+            'aksi' => 'void_rejected',
+            'catatan' => 'Void ditolak oleh Manajer: ' . $request->catatan,
+        ]);
+
+        $this->forgetDashboardCache($record);
+
+        // ponytail: defer user notification to run after response
+        defer(function () use ($record, $request) {
+            try {
+                $record->load('user', 'subUnit');
+                if ($record->user) {
+                    $record->user->notify(new TicketStatusUpdatedNotification($record, 'Transaksi void Anda ditolak: ' . $request->catatan));
+                }
+            } catch (\Exception $e) {
+                \Log::error("Gagal mengirim notifikasi void rejected tiket #{$record->id}: " . $e->getMessage());
+            }
+        });
+
+        return redirect()->back()->with('success', 'Transaksi Void telah ditolak.');
     }
 }
 

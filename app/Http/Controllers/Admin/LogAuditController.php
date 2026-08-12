@@ -196,6 +196,7 @@ class LogAuditController extends Controller
             ] : null,
             'donatur' => $record->donatur?->nama_lengkap,
             'jumlah_donasi' => $record->jumlah_donasi,
+            'nominal_void' => $record->nominal_void,
             'status' => $record->status,
             'campaign' => $record->campaign?->nama_campaign,
             'akad' => $record->akad?->nama_akad,

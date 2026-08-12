@@ -45,7 +45,8 @@ export function BottomNav({ items, className }: BottomNavProps) {
  <Icon className="h-5 w-5" />
  <span className="text-[10px] leading-none font-medium">{item.label}</span>
  {item.badge && (
- <div className="absolute -top-0.5 right-1/4 -translate-x-1/2">
+ <div className="absolute -top-0.5 right-1/4 -translate-x-1/2 flex items-center justify-center">
+ <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
  {item.badge}
  </div>
  )}

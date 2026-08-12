@@ -42,11 +42,38 @@ class HandleInertiaRequests extends Middleware
                 'user' => $request->user('web'),
                 'admin' => $request->user('admin'),
                 'is_superadmin' => $request->user('admin') ? $request->user('admin')->hasRole('Super Admin') : false,
-                'permissions' => $request->user('admin') 
-                    ? ($request->user('admin')->hasRole('Super Admin') 
-                        ? \Spatie\Permission\Models\Permission::pluck('name') 
-                        : $request->user('admin')->getAllPermissions()->pluck('name')) 
+                'permissions' => $request->user('admin')
+                    ? ($request->user('admin')->hasRole('Super Admin')
+                        ? \Spatie\Permission\Models\Permission::pluck('name')
+                        : $request->user('admin')->getAllPermissions()->pluck('name'))
                     : [],
+                'unread_messages_count' => function () use ($request) {
+                    $isAdminPath = $request->is('admin/*') || $request->is('admin');
+                    $user = $isAdminPath
+                        ? ($request->user('admin') ?: $request->user('web'))
+                        : ($request->user('web') ?: $request->user('admin'));
+
+                    if (!$user) return 0;
+
+                    $type = get_class($user);
+                    $id = $user->id;
+
+                    return \App\Models\Message::where('is_read', false)
+                        ->where(function ($q) use ($id, $type) {
+                            $q->where('sender_type', '!=', $type)
+                              ->orWhere('sender_id', '!=', $id);
+                        })
+                        ->whereHas('conversation', function ($q) use ($id, $type) {
+                            $q->where(function ($sq) use ($id, $type) {
+                                $sq->where('participant_one_type', $type)
+                                   ->where('participant_one_id', $id);
+                            })->orWhere(function ($sq) use ($id, $type) {
+                                $sq->where('participant_two_type', $type)
+                                   ->where('participant_two_id', $id);
+                            });
+                        })
+                        ->count();
+                },
             ],
             'flash' => [
                 'message' => fn () => $request->session()->get('message'),

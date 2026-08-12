@@ -22,7 +22,8 @@ const rupiahCompact = (v: number) =>
 export default function DashboardIndex({
  filters, totalDonasi, totalTransaksi, totalDonatur, fundraiserAktif,
  monthlyTrend, distribusiMetode, topFundraiser, topDonatur, riwayatTransaksi,
- followUpTickets, donasiPerCabang, campaignProgress = [], akadProgress = []
+ followUpTickets, donasiPerCabang, campaignProgress = [], akadProgress = [],
+ voidStats = { totalNominalVoid: 0, totalTransaksiVoid: 0, topFundraiserVoid: [] }
 }: any) {
  const [month, setMonth] = useState(filters?.month !== null && filters?.month !== undefined ? String(filters.month) : '');
  const [year, setYear] = useState(filters?.year !== null && filters?.year !== undefined ? String(filters.year) : '');
@@ -104,7 +105,7 @@ export default function DashboardIndex({
   { key: 'total_donasi', header: 'Total Donasi (Rp)', render: (row: any) => <span className="font-semibold text-emerald-600 tabular-nums">{rupiah(row.total_donasi)}</span> },
  ];
 
- const donaturColumns = [
+  const donaturColumns = [
   { key: 'nama_donatur', header: 'Nama Donatur', render: (row: any) => <span className="font-medium text-slate-900">{row.nama_donatur}</span> },
   { key: 'total_transaksi', header: 'Total Transaksi', render: (row: any) => `${row.total_transaksi}x` },
   { key: 'total_donasi', header: 'Total Donasi (Rp)', render: (row: any) => <span className="font-semibold text-emerald-600 tabular-nums">{rupiah(row.total_donasi)}</span> },
@@ -169,6 +170,24 @@ export default function DashboardIndex({
       </div>
      ))}
      </div>
+
+     {/* Dashboard Void */}
+     <Card className="border-red-200 bg-red-50/30">
+      <CardContent className="p-4 flex items-center justify-between gap-3">
+       <div className="min-w-0">
+        <p className="text-sm font-medium text-red-600 mb-1 flex items-center gap-1.5">
+         <AlertTriangle className="h-4 w-4" /> Dashboard Void
+        </p>
+        <p className="text-xl lg:text-2xl font-bold text-slate-900 truncate">{rupiah(voidStats.totalNominalVoid)}</p>
+        <p className="text-xs text-slate-500 mt-1">
+         {voidStats.totalTransaksiVoid} transaksi void disetujui &bull; {voidStats.topFundraiserVoid?.length || 0} fundraiser
+        </p>
+       </div>
+       <Button variant="outline" size="sm" className="shrink-0 border-red-300 bg-white/70 text-red-700 hover:bg-white" onClick={() => router.get(route('admin.void.index'))}>
+        Buka Dashboard Void
+       </Button>
+      </CardContent>
+     </Card>
 
     {/* Data Perlu Ditindak Lanjuti */}
     {followUpTickets?.length > 0 ? (

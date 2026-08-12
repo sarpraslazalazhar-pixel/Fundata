@@ -9,8 +9,9 @@ const statusStyles: Record<string, string> = {
  selesai: 'bg-[#0d6efd] text-white border-[#0d6efd] ',
  reject: 'bg-red-100 text-red-700 border-red-200 ',
  dibatalkan: 'bg-red-100 text-red-700 border-red-200 ',
- waiting_approval: 'bg-cyan-100 text-cyan-700 border-cyan-200 ',
- need_revision: 'bg-fuchsia-100 text-fuchsia-700 border-fuchsia-200 ',
+waiting_approval: 'bg-cyan-100 text-cyan-700 border-cyan-200 ',
+  need_revision: 'bg-fuchsia-100 text-fuchsia-700 border-fuchsia-200 ',
+  menunggu_manager: 'bg-amber-100 text-amber-700 border-amber-200 ',
 };
 
 const statusLabels: Record<string, string> = {
@@ -21,8 +22,9 @@ const statusLabels: Record<string, string> = {
  selesai: 'Selesai',
  reject: 'Ditolak',
  dibatalkan: 'Dibatalkan',
- waiting_approval: 'Menunggu Review',
- need_revision: 'Butuh Revisi',
+waiting_approval: 'Menunggu Review',
+  need_revision: 'Butuh Revisi',
+  menunggu_manager: 'Menunggu Manajer',
 };
 
 interface StatusBadgeProps {

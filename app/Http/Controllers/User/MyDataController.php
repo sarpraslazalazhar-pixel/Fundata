@@ -43,7 +43,7 @@ class MyDataController extends Controller
         return Inertia::render('User/Data/Riwayat', [
             'records' => $records,
             'filters' => $request->only('status', 'date_from', 'date_to'),
-            'statuses' => ['open', 'on_proses', 'pending', 'solve', 'reject', 'dibatalkan', 'waiting_approval', 'need_revision'],
+            'statuses' => ['open', 'on_proses', 'pending', 'solve', 'reject', 'dibatalkan', 'waiting_approval', 'need_revision', 'menunggu_manager'],
         ]);
     }
 

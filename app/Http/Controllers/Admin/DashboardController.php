@@ -91,7 +91,8 @@ class DashboardController extends Controller
                     DB::raw('COUNT(*) as total_tiket'),
                     DB::raw('SUM(tickets.jumlah_donasi) as total_donasi')
                 )
-                ->whereNotIn('tickets.status', ['reject', 'dibatalkan']);
+                ->whereNotIn('tickets.status', ['reject', 'dibatalkan'])
+                ->where('tickets.jumlah_donasi', '>', 0);
 
             if ($year) $topFundraiserQuery->whereYear('tickets.created_at', $year);
             if ($month) $topFundraiserQuery->whereMonth('tickets.created_at', $month);
@@ -118,7 +119,8 @@ class DashboardController extends Controller
                     DB::raw('SUM(tickets.jumlah_donasi) as total_donasi')
                 )
                 ->whereNotIn('tickets.status', ['reject', 'dibatalkan'])
-                ->whereNotNull('tickets.donatur_id');
+                ->whereNotNull('tickets.donatur_id')
+                ->where('tickets.jumlah_donasi', '>', 0);
 
             if ($year) $topDonaturQuery->whereYear('tickets.created_at', $year);
             if ($month) $topDonaturQuery->whereMonth('tickets.created_at', $month);
@@ -154,6 +156,7 @@ class DashboardController extends Controller
             ->leftJoin('org_divisi', 'users.divisi_id', '=', 'org_divisi.id')
             ->leftJoin('org_unit', 'users.org_unit_id', '=', 'org_unit.id')
             ->whereNotIn('tickets.status', ['reject', 'dibatalkan'])
+            ->where('tickets.jumlah_donasi', '>', 0)
             ->groupBy('users.divisi_id', 'users.org_unit_id', 'org_divisi.nama_divisi', 'org_unit.nama_unit_organisasi');
 
             if ($year) $donasiCabangQuery->whereYear('tickets.created_at', $year);
@@ -217,6 +220,39 @@ class DashboardController extends Controller
                 ];
             });
 
+            // ── Void Stats (hanya void yang sudah disetujui Manajer) ──
+            $approvedStatuses = ['open', 'on_proses', 'pending', 'solve', 'need_revision', 'waiting_approval'];
+            $voidQuery = Record::withoutEagerLoads()->where('nominal_void', '>', 0)->whereIn('status', $approvedStatuses);
+            if ($year) $voidQuery->whereYear('created_at', $year);
+            if ($month) $voidQuery->whereMonth('created_at', $month);
+
+            $voidKpi = (clone $voidQuery)->selectRaw('
+                COUNT(*) as total_transaksi,
+                COALESCE(SUM(nominal_void), 0) as total_nominal
+            ')->first();
+
+            $totalNominalVoid = (float) ($voidKpi->total_nominal ?? 0);
+            $totalTransaksiVoid = (int) ($voidKpi->total_transaksi ?? 0);
+
+            $topFundraiserVoidQuery = DB::table('tickets')
+                ->join('users', 'tickets.user_id', '=', 'users.id')
+                ->select(
+                    'users.username',
+                    'users.name',
+                    DB::raw('COUNT(*) as total_tiket'),
+                    DB::raw('SUM(tickets.nominal_void) as total_nominal_void')
+                )
+                ->where('tickets.nominal_void', '>', 0)
+                ->whereIn('tickets.status', $approvedStatuses);
+            
+            if ($year) $topFundraiserVoidQuery->whereYear('tickets.created_at', $year);
+            if ($month) $topFundraiserVoidQuery->whereMonth('tickets.created_at', $month);
+
+            $topFundraiserVoid = $topFundraiserVoidQuery->groupBy('users.id', 'users.username', 'users.name')
+                ->orderByDesc('total_nominal_void')
+                ->limit(10)
+                ->get();
+
             return [
                 'totalDonasi' => $totalDonasi,
                 'totalTransaksi' => $totalTransaksi,
@@ -231,6 +267,11 @@ class DashboardController extends Controller
                 'donasiPerCabang' => $donasiPerCabang->toArray(),
                 'campaignProgress' => $campaignProgress->toArray(),
                 'akadProgress' => $akadProgress->toArray(),
+                'voidStats' => [
+                    'totalNominalVoid' => $totalNominalVoid,
+                    'totalTransaksiVoid' => $totalTransaksiVoid,
+                    'topFundraiserVoid' => $topFundraiserVoid->toArray(),
+                ],
             ];
         });
 

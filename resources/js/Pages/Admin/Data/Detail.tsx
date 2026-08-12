@@ -20,19 +20,22 @@ const validTransitions: Record<string, string[]> = {
 };
 
 const statusLabels: Record<string, string> = {
- open: 'Baru', on_proses: 'Diproses', pending: 'Tertunda', solve: 'Selesai', reject: 'Ditolak', dibatalkan: 'Dibatalkan', need_revision: 'Butuh Revisi', accepted: 'Diterima User',
+ open: 'Baru', on_proses: 'Diproses', pending: 'Tertunda', solve: 'Selesai', reject: 'Ditolak', dibatalkan: 'Dibatalkan', need_revision: 'Butuh Revisi', accepted: 'Diterima User', menunggu_manager: 'Menunggu Manajer',
 };
 
-export default function TicketDetail({ ticket, formFields, operators, akads, paymentMethods }: any) {
- const { auth } = usePage().props as any;
- const canAssignOperator = auth?.permissions?.includes('akses-assign-operator');
+ export default function TicketDetail({ ticket, formFields, operators, akads, paymentMethods }: any) {
+  const { auth } = usePage().props as any;
+  const canAssignOperator = auth?.permissions?.includes('akses-assign-operator');
+  const isManager = auth?.is_superadmin || auth?.permissions?.includes('akses-void-approval');
 
- const [editorOpen, setEditorOpen] = useState(false);
+  const [editorOpen, setEditorOpen] = useState(false);
  const [shareOpen, setShareOpen] = useState(false);
  const [fileToEdit, setFileToEdit] = useState<{file: File, index: number, form: 'admin'} | null>(null);
 
  const { data: statusData, setData: setStatusData, post: postStatus, processing: processingStatus, errors: errorsStatus, reset: resetStatus } = useForm({ status: '', catatan: '', link_kwitansi: '', nomor_kwitansi: '', general_attachments: [] as File[], _method: 'patch' });
  const { data: assignData, setData: setAssignData, patch: patchAssign, processing: processingAssign, errors: errorsAssign } = useForm({ assigned_admin_id: ticket.assigned_admin_id || '' });
+ const { post: postApprove, processing: processingApprove } = useForm({ _method: 'patch' });
+ const { data: rejectData, setData: setRejectData, post: postReject, processing: processingReject, errors: rejectErrors } = useForm({ catatan: '', _method: 'patch' });
 
  const transitions = validTransitions[ticket.status] || [];
 
@@ -48,6 +51,19 @@ export default function TicketDetail({ ticket, formFields, operators, akads, pay
  const handleAssignSubmit = (e: React.FormEvent) => {
  e.preventDefault();
  patchAssign(route('admin.data.assign', ticket.id));
+ };
+
+ const handleApprove = () => {
+  if (confirm('Yakin ingin menyetujui transaksi Void ini?')) {
+   postApprove(route('admin.data.approve-void', ticket.id));
+  }
+ };
+
+ const handleReject = (e: React.FormEvent) => {
+  e.preventDefault();
+  if (confirm('Yakin ingin menolak transaksi Void ini?')) {
+   postReject(route('admin.data.reject-void', ticket.id));
+  }
  };
 
  const renderFormValue = (field: any) => {
@@ -176,16 +192,33 @@ export default function TicketDetail({ ticket, formFields, operators, akads, pay
  </CardContent>
  </Card>
 
- {(ticket.donatur || ticket.jumlah_donasi) && (
+ {(ticket.donatur || ticket.jumlah_donasi || ticket.nominal_void) && (
   <Card>
-  <CardHeader><CardTitle>Informasi Donatur</CardTitle></CardHeader>
+  <CardHeader><CardTitle>{ticket.nominal_void ? 'Informasi Pengajuan' : 'Informasi Donatur'}</CardTitle></CardHeader>
   <CardContent className="grid grid-cols-2 gap-4">
   <div><span className="text-sm text-slate-500">Nama Donatur</span><p className="font-medium">{ticket.donatur?.nama_lengkap || '-'}</p></div>
-  <div><span className="text-sm text-slate-500">Jumlah Donasi</span><p className="font-medium">
-  {ticket.jumlah_donasi 
-  ? new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(Number(ticket.jumlah_donasi))
-  : '-'}
-  </p></div>
+  <div>
+   {ticket.jumlah_donasi ? (
+    <>
+     <span className="text-sm text-slate-500">Jumlah Donasi</span>
+     <p className="font-medium">
+      {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(Number(ticket.jumlah_donasi))}
+     </p>
+    </>
+   ) : ticket.nominal_void ? (
+    <>
+     <span className="text-sm text-slate-500">Nominal Void</span>
+     <p className="font-medium text-rose-600">
+      {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(Number(ticket.nominal_void))}
+     </p>
+    </>
+   ) : (
+    <>
+     <span className="text-sm text-slate-500">Jumlah Donasi</span>
+     <p className="font-medium">-</p>
+    </>
+   )}
+  </div>
   </CardContent>
   </Card>
   )}
@@ -203,7 +236,7 @@ export default function TicketDetail({ ticket, formFields, operators, akads, pay
  </div>
 
  <div className="space-y-6">
- {canAssignOperator && (
+ {canAssignOperator && ticket.status !== 'menunggu_manager' && (
  <Card>
  <CardHeader><CardTitle>Penugasan Operator</CardTitle></CardHeader>
  <CardContent>
@@ -231,10 +264,46 @@ export default function TicketDetail({ ticket, formFields, operators, akads, pay
  </Card>
  )}
 
+  {ticket.status === 'menunggu_manager' && (
+   <Card className="border-amber-300 bg-amber-50">
+    <CardHeader><CardTitle className="text-amber-900">Persetujuan Void</CardTitle></CardHeader>
+    <CardContent>
+     {isManager ? (
+      <form onSubmit={handleReject} className="space-y-4">
+       <p className="text-sm text-amber-800">Tiket ini merupakan transaksi Void dan membutuhkan persetujuan Manajer sebelum dapat diproses Kasir.</p>
+       <div className="space-y-2">
+        <label className="text-sm font-medium">Catatan (Wajib jika ditolak)</label>
+        <textarea 
+         className="w-full rounded-md border border-input bg-white px-3 py-2 text-sm" 
+         rows={3} 
+         value={rejectData.catatan} 
+         onChange={e => setRejectData('catatan', e.target.value)}
+         placeholder="Alasan penolakan..."
+        />
+        {rejectErrors.catatan && <p className="text-red-500 text-sm">{rejectErrors.catatan}</p>}
+       </div>
+       <div className="grid grid-cols-2 gap-3">
+        <Button type="button" onClick={handleApprove} className="w-full bg-emerald-600 hover:bg-emerald-700 text-white" disabled={processingApprove || processingReject}>
+         Approve Void
+        </Button>
+        <Button type="submit" variant="destructive" className="w-full" disabled={processingApprove || processingReject}>
+         Reject Void
+        </Button>
+       </div>
+      </form>
+     ) : (
+      <p className="text-sm text-amber-700">Tiket ini sedang menunggu persetujuan Manajer. Anda tidak memiliki akses untuk menyetujui, dan tidak bisa memprosesnya.</p>
+     )}
+    </CardContent>
+   </Card>
+  )}
+
  <Card>
  <CardHeader><CardTitle>Aksi Status</CardTitle></CardHeader>
  <CardContent>
- {transitions.length > 0 ? (
+ {ticket.status === 'menunggu_manager' ? (
+   <p className="text-sm text-amber-600 font-medium">Aksi status dikunci karena tiket sedang menunggu persetujuan Manajer.</p>
+  ) : transitions.length > 0 ? (
  <form onSubmit={handleStatusSubmit} className="space-y-4">
  <div className="space-y-2">
  <span className="text-sm text-slate-500">Status Saat Ini:</span>

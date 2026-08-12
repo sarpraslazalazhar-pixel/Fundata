@@ -153,8 +153,16 @@ export default function LaporanData({
   },
   {
    key: 'jumlah_donasi',
-   header: 'Jumlah Donasi',
-   render: (row: any) => <span className="font-semibold text-emerald-600 tabular-nums">{rupiah(row.jumlah_donasi)}</span>,
+   header: 'Donasi / Nominal',
+   render: (row: any) => {
+    if (row.jumlah_donasi) {
+     return <span className="font-semibold text-emerald-600 tabular-nums">{rupiah(row.jumlah_donasi)}</span>;
+    }
+    if (row.nominal_void) {
+     return <span className="font-semibold text-rose-600 tabular-nums">({rupiah(row.nominal_void)})</span>;
+    }
+    return <span className="text-slate-400">-</span>;
+   }
   },
   {
    key: 'user',

@@ -20,6 +20,7 @@ class PermissionSeeder extends Seeder
             'akses-laporan',
             'akses-manajemen-akun',
             'akses-assign-operator',
+            'akses-void-approval',
         ];
 
         foreach ($permissions as $permission) {
@@ -29,6 +30,7 @@ class PermissionSeeder extends Seeder
         $superAdmin = Role::firstOrCreate(['name' => 'Super Admin', 'guard_name' => 'admin']);
         $admin = Role::firstOrCreate(['name' => 'Admin', 'guard_name' => 'admin']);
         $operator = Role::firstOrCreate(['name' => 'Operator', 'guard_name' => 'admin']);
+        $manager = Role::firstOrCreate(['name' => 'Manager', 'guard_name' => 'admin']);
 
         // Admin gets all permissions by default (or Super Admin via Gate::before if we set it up)
         $admin->syncPermissions($permissions);

@@ -310,7 +310,7 @@ class MessageController extends Controller
             'attachment_size' => $attachmentSize,
         ]);
 
-        $message->load('context');
+        $message->load(['context', 'sender']);
 
         // Broadcast to receiver
         broadcast(new MessageSent($message, clone $conversation))->toOthers();

@@ -40,7 +40,7 @@ export default function Index({ roles, permissions }: Props) {
  { label: 'Konfigurasi (Form, SLA, Reminder, Sistem)', value: 'akses-konfigurasi' },
  { label: 'Laporan (CSAT, Tiket)', value: 'akses-laporan' },
  { label: 'Manajemen Akun (Peran, Operator, Pengguna)', value: 'akses-manajemen-akun' },
- { label: 'Penugasan (Menugaskan Tiket ke Operator)', value: 'akses-assign-operator' },
+ { label: 'Manajer (Persetujuan Transaksi Void)', value: 'akses-void-approval' },
  ];
 
  const openModal = (role?: Role) => {

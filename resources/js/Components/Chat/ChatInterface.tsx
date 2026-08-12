@@ -124,7 +124,7 @@ export default function ChatInterface({ guard }: { guard?: 'user' | 'admin' }) {
         const serviceName = context.sub_unit_nama || context.sub_unit?.nama_layanan || '';
         const title = context.judul || (serviceName ? `Pengajuan ${serviceName}` : `Tiket #${context.id}`);
         const donaturName = context.donatur_nama || context.donatur?.nama_lengkap || context.form_data?.nama_donatur || context.form_data?.donatur_nama || context.form_data?.nama_lengkap;
-        const rawNominal = context.jumlah_donasi || context.form_data?.jumlah_donasi || context.form_data?.nominal;
+        const rawNominal = context.jumlah_donasi || context.nominal_void || context.form_data?.jumlah_donasi || context.form_data?.nominal;
         const nominalFormatted = formatRupiah(rawNominal);
 
         const statusInfo = getStatusInfo(context.status);
@@ -224,7 +224,15 @@ export default function ChatInterface({ guard }: { guard?: 'user' | 'admin' }) {
         if (showLoading) setLoading(true);
         try {
             const res = await axios.get(`/api/messages/contacts?sender_type=${userModelType === 'App\\Models\\Admin' ? 'admin' : 'user'}`);
-            setContacts(res.data);
+            // Force active chat unread count to be 0 to prevent race condition/delay notification bugs
+            const active = activeChatRef.current;
+            const updatedContacts = res.data.map((c: any) => {
+                if (active && String(c.id) === String(active.id) && c.model_type === active.model_type) {
+                    return { ...c, unread_count: 0 };
+                }
+                return c;
+            });
+            setContacts(updatedContacts);
         } catch (error) {
             console.error(error);
         }
@@ -236,6 +244,14 @@ export default function ChatInterface({ guard }: { guard?: 'user' | 'admin' }) {
         try {
             const res = await axios.get(`/api/messages/${chat.id}?receiver_type=${encodeURIComponent(chat.model_type)}&sender_type=${userModelType === 'App\\Models\\Admin' ? 'admin' : 'user'}`);
             setMessages(res.data);
+
+            // Also reset active chat unread count locally when fetching messages
+            setContacts(prev => prev.map(c => {
+                if (String(c.id) === String(chat.id) && c.model_type === chat.model_type) {
+                    return { ...c, unread_count: 0 };
+                }
+                return c;
+            }));
         } catch (error) {
             console.error(error);
         }
@@ -250,7 +266,7 @@ export default function ChatInterface({ guard }: { guard?: 'user' | 'admin' }) {
             });
             // Update contacts state: reset unread_count to 0 for this contact
             setContacts(prev => prev.map(c => {
-                if (c.id === chat.id && c.model_type === chat.model_type) {
+                if (String(c.id) === String(chat.id) && c.model_type === chat.model_type) {
                     return { ...c, unread_count: 0 };
                 }
                 return c;
@@ -361,6 +377,14 @@ export default function ChatInterface({ guard }: { guard?: 'user' | 'admin' }) {
 
         return () => clearInterval(interval);
     }, []);
+
+    // Dispatch custom event when contacts list changes (unread counts updated)
+    useEffect(() => {
+        if (contacts.length > 0 || !loading) {
+            const total = contacts.reduce((acc, c) => acc + (c.unread_count || 0), 0);
+            window.dispatchEvent(new CustomEvent('messages-read', { detail: { unreadCount: total } }));
+        }
+    }, [contacts, loading]);
 
     const handleOpenContextModal = async () => {
         setShowContextModal(true);

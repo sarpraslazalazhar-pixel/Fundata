@@ -23,7 +23,7 @@ const columns = [
  { key: 'unit', header: 'Unit', render: (t: any) => t.unit?.nama_unit || '-' },
  { key: 'sub_unit', header: 'Layanan', render: (t: any) => t.sub_unit?.nama_layanan || '-' },
  { key: 'donatur', header: 'Nama Donatur', render: (t: any) => t.donatur?.nama_lengkap || '-' },
- { key: 'donasi', header: 'Donasi (Rp)', render: (t: any) => t.jumlah_donasi ? new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(Number(t.jumlah_donasi)) : '-' },
+ { key: 'donasi', header: 'Donasi / Nominal (Rp)', render: (t: any) => t.jumlah_donasi ? new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(Number(t.jumlah_donasi)) : (t.nominal_void ? `(Void) ${new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(Number(t.nominal_void))}` : '-') },
  { key: 'admin', header: 'Kasir', render: (t: any) => {
       // Prioritize the assigned admin. If none, check the latest log with an admin attached.
       if (t.assignedAdmin) return t.assignedAdmin.name || t.assignedAdmin.username;
@@ -131,7 +131,7 @@ export default function Riwayat({ records, filters, statuses }: RiwayatProps) {
  <Label>Status</Label>
  <div className="flex flex-wrap gap-2 mt-1">
  {statuses.map(s => {
- const labels: any = { open: 'Baru', on_proses: 'Diproses', pending: 'Tertunda', solve: 'Selesai', reject: 'Ditolak', dibatalkan: 'Dibatalkan', waiting_approval: 'Menunggu Review', need_revision: 'Butuh Revisi' };
+ const labels: any = { open: 'Baru', on_proses: 'Diproses', pending: 'Tertunda', solve: 'Selesai', reject: 'Ditolak', dibatalkan: 'Dibatalkan', waiting_approval: 'Menunggu Review', need_revision: 'Butuh Revisi', menunggu_manager: 'Menunggu Manajer' };
  return (
  <Badge
  key={s}

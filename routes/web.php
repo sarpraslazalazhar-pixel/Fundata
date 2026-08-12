@@ -209,6 +209,11 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::post('mark-all-read', [\App\Http\Controllers\Admin\NotificationController::class, 'markAllAsRead'])->name('mark-all-read');
         });
 
+        // Dashboard Void
+        Route::middleware('permission:akses-void-approval')->group(function () {
+            Route::get('/void', [\App\Http\Controllers\Admin\VoidController::class, 'index'])->name('void.index');
+        });
+
         // Verifikasi Data Admin
         Route::prefix('verifikasi-data')->name('data.')->group(function () {
             Route::get('/', [\App\Http\Controllers\Admin\DataVerificationController::class, 'index'])->name('index');
@@ -218,6 +223,8 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::patch('/{record}/assign', [\App\Http\Controllers\Admin\DataVerificationController::class, 'assignOperator'])->name('assign');
             Route::patch('/{record}/status', [\App\Http\Controllers\Admin\DataVerificationController::class, 'updateStatus'])->name('status');
             Route::patch('/{record}/priority', [\App\Http\Controllers\Admin\DataVerificationController::class, 'updatePriority'])->name('priority');
+            Route::patch('/{record}/approve-void', [\App\Http\Controllers\Admin\DataVerificationController::class, 'approveVoid'])->name('approve-void');
+            Route::patch('/{record}/reject-void', [\App\Http\Controllers\Admin\DataVerificationController::class, 'rejectVoid'])->name('reject-void');
         });
     });
 });

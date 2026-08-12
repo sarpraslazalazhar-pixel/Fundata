@@ -268,10 +268,10 @@ export default function Detail({ ticket, formFields, maxRevisions, akads, paymen
  </CardContent>
  </Card>
 
- {(ticket.donatur || ticket.jumlah_donasi) && (
+ {(ticket.donatur || ticket.jumlah_donasi || ticket.nominal_void) && (
  <Card className="md:col-span-2">
  <CardHeader>
- <CardTitle>Informasi Donatur</CardTitle>
+ <CardTitle>{ticket.nominal_void ? 'Informasi Pengajuan' : 'Informasi Donatur'}</CardTitle>
  </CardHeader>
  <CardContent className="space-y-2 grid grid-cols-1 md:grid-cols-2">
  <div>
@@ -279,12 +279,26 @@ export default function Detail({ ticket, formFields, maxRevisions, akads, paymen
  <p className="font-medium">{ticket.donatur?.nama_lengkap || '-'}</p>
  </div>
  <div>
- <span className="text-sm text-slate-500">Jumlah Donasi:</span>
- <p className="font-medium">
- {ticket.jumlah_donasi 
- ? new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(Number(ticket.jumlah_donasi))
- : '-'}
- </p>
+ {ticket.jumlah_donasi ? (
+  <>
+   <span className="text-sm text-slate-500">Jumlah Donasi:</span>
+   <p className="font-medium">
+    {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(Number(ticket.jumlah_donasi))}
+   </p>
+  </>
+ ) : ticket.nominal_void ? (
+  <>
+   <span className="text-sm text-slate-500">Nominal Void:</span>
+   <p className="font-medium text-rose-600">
+    {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(Number(ticket.nominal_void))}
+   </p>
+  </>
+ ) : (
+  <>
+   <span className="text-sm text-slate-500">Jumlah Donasi:</span>
+   <p className="font-medium">-</p>
+  </>
+ )}
  </div>
  </CardContent>
  </Card>

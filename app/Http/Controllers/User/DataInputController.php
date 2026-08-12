@@ -60,7 +60,14 @@ class DataInputController extends Controller
         $formFields = FormField::where('sub_unit_id', $request->sub_unit_id)->get();
         $extractedDonaturId = null;
         $extractedJumlahDonasi = null;
+        $extractedNominalVoid = null;
         $extractedAkadId = null;
+
+        $isVoid = false;
+        $subUnit = \App\Models\SubUnit::find($request->sub_unit_id);
+        if ($subUnit && stripos($subUnit->nama_layanan, 'void') !== false) {
+            $isVoid = true;
+        }
 
         foreach ($formFields as $field) {
             $fieldKey = (string) $field->id;
@@ -75,13 +82,18 @@ class DataInputController extends Controller
                     $extractedAkadId = $val;
                 }
                 if (stripos($field->label, 'donasi') !== false || stripos($field->label, 'jumlah donasi') !== false || stripos($field->label, 'nominal') !== false) {
-                    // Hanya set ke jumlah_donasi jika tipe data numerik/nominal_rp, atau string angka
+                    // Hanya set ke jumlah_donasi/nominal_void jika tipe data numerik/nominal_rp, atau string angka
                     if (is_numeric(str_replace(['Rp', '.', ',', ' '], '', $val))) {
-                        $extractedJumlahDonasi = (float) str_replace(['Rp', '.', ',', ' '], '', $val);
-                        if ($extractedJumlahDonasi >= 9999999999999.99) {
+                        $cleanVal = (float) str_replace(['Rp', '.', ',', ' '], '', $val);
+                        if ($cleanVal >= 9999999999999.99) {
                             throw \Illuminate\Validation\ValidationException::withMessages([
-                                "form_data.{$fieldKey}" => "Jumlah donasi terlalu besar. Maksimal yang diizinkan adalah Rp 9.999.999.999.999"
+                                "form_data.{$fieldKey}" => "Nilai terlalu besar. Maksimal yang diizinkan adalah Rp 9.999.999.999.999"
                             ]);
+                        }
+                        if ($isVoid) {
+                            $extractedNominalVoid = $cleanVal;
+                        } else {
+                            $extractedJumlahDonasi = $cleanVal;
                         }
                     }
                 }
@@ -105,8 +117,8 @@ class DataInputController extends Controller
             }
         }
 
-        $record = DB::transaction(function () use ($request, $formFields, $extractedDonaturId, $extractedJumlahDonasi, $extractedAkadId) {
-            $initialStatus = 'open'; // Draft/Open
+        $record = DB::transaction(function () use ($request, $formFields, $extractedDonaturId, $extractedJumlahDonasi, $extractedNominalVoid, $extractedAkadId, $isVoid) {
+            $initialStatus = $isVoid ? 'menunggu_manager' : 'open'; // Draft/Open
 
             $user = auth()->user();
 
@@ -123,6 +135,7 @@ class DataInputController extends Controller
                 'form_data' => $request->form_data,
                 'donatur_id' => $extractedDonaturId ?? $request->donatur_id,
                 'jumlah_donasi' => $extractedJumlahDonasi ?? $request->jumlah_donasi,
+                'nominal_void' => $extractedNominalVoid,
                 'status' => $initialStatus,
             ]);
 
@@ -225,6 +238,19 @@ class DataInputController extends Controller
                 Notification::send($notifiedAdmins, new TicketCreatedAdminNotification($record));
             } else {
                 Notification::send(new \Illuminate\Notifications\AnonymousNotifiable, new TicketCreatedAdminNotification($record));
+            }
+
+            // Notifikasi khusus ke admin berperan akses-void-approval (Manajer) saat void baru masuk
+            if ($isVoid) {
+                $voidManagers = \App\Models\Admin::whereHas('roles', function ($q) {
+                    $q->where('name', 'superadmin');
+                })->orWhereHas('permissions', function ($q) {
+                    $q->where('name', 'akses-void-approval');
+                })->get();
+
+                if ($voidManagers->isNotEmpty()) {
+                    Notification::send($voidManagers, new \App\Notifications\VoidPendingApprovalNotification($record));
+                }
             }
         } catch (\Exception $e) {
             \Log::error("Gagal mengirim notifikasi untuk data #{$record->id}: " . $e->getMessage());

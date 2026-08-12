@@ -56,8 +56,10 @@ function isRouteActive(url: string, routePath?: string): boolean {
   return pathOnly === routePath || pathOnly.startsWith(routePath + '/');
 }
 
-function NavLink({ item, active, isCollapsed }: { item: NavItem; active: boolean; isCollapsed: boolean }) {
+function NavLink({ item, active, isCollapsed, unreadCount }: { item: NavItem; active: boolean; isCollapsed: boolean; unreadCount?: number }) {
   const Icon = item.icon;
+  const hasBadge = unreadCount !== undefined && unreadCount > 0 && (item.route === '/pesan' || item.label === 'Pesan');
+
   return (
     <Link
       href={item.route}
@@ -80,8 +82,24 @@ function NavLink({ item, active, isCollapsed }: { item: NavItem; active: boolean
       )}
 
       <div className={`relative z-10 flex items-center ${isCollapsed ? 'justify-center' : 'gap-3 w-full'}`}>
-        <Icon className={`h-4 w-4 shrink-0 transition-transform duration-200 ${active ? 'scale-110 text-slate-900' : 'group-hover:scale-110'}`} />
+        <div className="relative">
+          <Icon className={`h-4 w-4 shrink-0 transition-transform duration-200 ${active ? 'scale-110 text-slate-900' : 'group-hover:scale-110'}`} />
+          {isCollapsed && hasBadge && (
+            <span className="absolute -top-1.5 -right-1.5 flex h-3 w-3 items-center justify-center">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
+              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500 ring-2 ring-white" />
+            </span>
+          )}
+        </div>
         {!isCollapsed && <span className="truncate">{item.label}</span>}
+        {!isCollapsed && hasBadge && (
+          <span className="relative ml-auto flex items-center justify-center">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
+            <span className="relative flex h-5 min-w-[20px] items-center justify-center rounded-full bg-red-500 px-1.5 text-[10px] font-bold text-white shadow-xs">
+              {unreadCount > 99 ? '99+' : unreadCount}
+            </span>
+          </span>
+        )}
       </div>
     </Link>
   );
@@ -93,6 +111,23 @@ export default function UserLayout({ children, title }: UserLayoutProps) {
   const [profileOpen, setProfileOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { subscribe } = useWebPush(user);
+
+  const [unreadMessagesCount, setUnreadMessagesCount] = useState<number>(() => auth?.unread_messages_count || 0);
+
+  useEffect(() => {
+    setUnreadMessagesCount(auth?.unread_messages_count || 0);
+  }, [auth?.unread_messages_count]);
+
+  useEffect(() => {
+    const handleMessagesRead = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      if (customEvent.detail && typeof customEvent.detail.unreadCount === 'number') {
+        setUnreadMessagesCount(customEvent.detail.unreadCount);
+      }
+    };
+    window.addEventListener('messages-read', handleMessagesRead);
+    return () => window.removeEventListener('messages-read', handleMessagesRead);
+  }, []);
 
   const soundUrl = appConfig?.notification_sound_path
     ? `/system/notification-sound?v=${encodeURIComponent(appConfig.notification_sound_path)}`
@@ -178,6 +213,16 @@ export default function UserLayout({ children, title }: UserLayoutProps) {
             });
           }
           toast.success(notification.title || 'Pemberitahuan Baru', { id: `notif-${Date.now()}` });
+        })
+        .listen('MessageSent', (e: any) => {
+          const isChatPage = window.location.pathname === '/pesan' || window.location.pathname === '/admin/pesan';
+          if (!isChatPage) {
+            setUnreadMessagesCount(prev => prev + 1);
+            playNotificationSound();
+            toast.success(`Pesan baru dari ${e.message.sender?.name || 'Pengguna'}: ${e.message.body || '[Lampiran]'}`, {
+              id: `msg-${e.message.id || Date.now()}`
+            });
+          }
         });
 
       return () => {
@@ -234,6 +279,7 @@ export default function UserLayout({ children, title }: UserLayoutProps) {
               item={item}
               active={isActive(item.route)}
               isCollapsed={collapsed}
+              unreadCount={unreadMessagesCount}
             />
           ))}
         </nav>
@@ -284,7 +330,16 @@ export default function UserLayout({ children, title }: UserLayoutProps) {
   const bottomNavItems: BottomNavItem[] = [
     { label: 'Dashboard', icon: LayoutDashboard, route: '/dashboard' },
     { label: 'Input Data', icon: PlusCircle, route: '/data/buat' },
-    { label: 'Pesan', icon: MessageSquare, route: '/pesan' },
+    {
+      label: 'Pesan',
+      icon: MessageSquare,
+      route: '/pesan',
+      badge: unreadMessagesCount > 0 ? (
+        <span className="flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-bold text-white shadow-xs">
+          {unreadMessagesCount > 99 ? '99+' : unreadMessagesCount}
+        </span>
+      ) : undefined
+    },
     { label: 'Lainnya', icon: MoreHorizontal, onClick: () => setSidebarOpen(true) },
   ];
 

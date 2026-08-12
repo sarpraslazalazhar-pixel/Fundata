@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Head, router } from '@inertiajs/react';
+import { Head, router, usePage } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import { DataTable } from '@/Components/DataTable';
 import { StatusBadge } from '@/Components/StatusBadge';
@@ -7,6 +7,7 @@ import SlaBadge from '@/Components/SlaBadge';
 import { Pagination } from '@/Components/Pagination';
 import { Button } from '@/Components/ui/button';
 import { DateRangePicker } from '@/Components/ui/date-range-picker';
+import VoidDecisionButtons from '@/Components/VoidDecisionButtons';
 import { Eye, Filter, ExternalLink } from 'lucide-react';
 import { formatTicketId } from '@/lib/utils';
 
@@ -14,6 +15,7 @@ const STATUS_LIST = [
  { value: 'open', label: 'Baru' },
  { value: 'on_proses', label: 'Diproses' },
  { value: 'pending', label: 'Tertunda' },
+ { value: 'menunggu_manager', label: 'Menunggu Manajer' },
  { value: 'waiting_approval', label: 'Menunggu Review' },
  { value: 'need_revision', label: 'Butuh Revisi' },
 ];
@@ -26,6 +28,7 @@ interface Ticket {
  assigned_admin?: { id: number; name: string; username: string };
  donatur?: any;
  jumlah_donasi?: number;
+ nominal_void?: number;
  status: string;
  created_at: string;
  link_kwitansi?: string;
@@ -34,6 +37,8 @@ interface Ticket {
 }
 
 export default function DataIndex({ records, filters, units, divisiList, orgUnitList }: any) {
+ const { auth } = usePage().props as any;
+ const isManager = auth?.is_superadmin || auth?.permissions?.includes('akses-void-approval');
  const [showFilter, setShowFilter] = useState(() => {
  return !!(filters?.unit_id || filters?.sub_unit_id || filters?.status || filters?.date_from || filters?.date_to || filters?.divisi_id || filters?.org_unit_id);
  });
@@ -111,7 +116,7 @@ export default function DataIndex({ records, filters, units, divisiList, orgUnit
  ),
  },
  { key: 'donatur', header: 'Nama Donatur', render: (t: Ticket) => t.donatur?.nama_lengkap || '-' },
- { key: 'donasi', header: 'Donasi (Rp)', render: (t: Ticket) => t.jumlah_donasi ? new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(Number(t.jumlah_donasi)) : '-' },
+ { key: 'donasi', header: 'Donasi / Nominal (Rp)', render: (t: Ticket) => t.jumlah_donasi ? new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(Number(t.jumlah_donasi)) : (t.nominal_void ? `(Void) ${new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(Number(t.nominal_void))}` : '-') },
  { key: 'status', header: 'Status', render: (t: Ticket) => <StatusBadge status={t.status} /> },
  {
  key: 'kwitansi',
@@ -129,15 +134,19 @@ export default function DataIndex({ records, filters, units, divisiList, orgUnit
  }
  },
  {
- key: 'aksi',
- header: 'Aksi',
- className: 'w-[100px]',
- render: (t: Ticket) => (
- <Button variant="outline" size="sm" onClick={() => router.get(route('admin.data.show', t.id))}>
- <Eye className="w-4 h-4 mr-1" /> Detail
- </Button>
- ),
- },
+key: 'aksi',
+  header: 'Aksi',
+  className: 'w-[220px]',
+  render: (t: Ticket) => (
+   t.status === 'menunggu_manager' && isManager ? (
+    <VoidDecisionButtons ticket={t} />
+   ) : (
+    <Button variant="outline" size="sm" onClick={() => router.get(route('admin.data.show', t.id))}>
+     <Eye className="w-4 h-4 mr-1" /> Detail
+    </Button>
+   )
+  ),
+  },
  ];
 
  return (
