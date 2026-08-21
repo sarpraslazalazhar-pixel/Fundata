@@ -22,6 +22,10 @@ class Message extends Model
 
     protected $with = ['context'];
 
+    protected $casts = [
+        'is_read' => 'boolean',
+    ];
+
     public function conversation()
     {
         return $this->belongsTo(Conversation::class);

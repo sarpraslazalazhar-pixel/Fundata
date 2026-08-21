@@ -31,10 +31,9 @@ Schedule::call(function () {
             $record->user->notify(new PendingTicketReminderNotification($record, 'user'));
         }
     }
-
-    // 3. Auto-delete Pesan Chat > 7 Hari
-    $oldMessages = Message::where('created_at', '<', now()->subDays(7))->get();
-    foreach ($oldMessages as $msg) {
-        $msg->delete(); // Memanggil event deleting di model untuk hapus attachment
-    }
 })->daily();
+
+// 3. Auto-delete Pesan Chat & Attachment > 7 Hari
+Schedule::command('messages:prune')->daily();
+
+

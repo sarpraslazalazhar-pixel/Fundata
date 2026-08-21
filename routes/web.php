@@ -127,7 +127,8 @@ Route::prefix('admin')->name('admin.')->group(function () {
                 Artisan::call('route:clear');
                 Artisan::call('view:clear');
                 Artisan::call('cache:clear');
-                return back()->with('success', 'Semua cache berhasil dibersihkan.');
+                Artisan::call('messages:prune');
+                return back()->with('success', 'Semua cache dan pesan kadaluarsa (>7 hari) berhasil dibersihkan.');
             })->name('system.clear');
         });
 

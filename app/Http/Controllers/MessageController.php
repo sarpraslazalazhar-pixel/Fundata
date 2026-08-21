@@ -50,8 +50,22 @@ class MessageController extends Controller
         return Auth::guard('web')->user();
     }
 
+    private function pruneExpiredMessages(): void
+    {
+        try {
+            $expired = Message::where('created_at', '<', now()->subDays(7))->get();
+            foreach ($expired as $msg) {
+                $msg->delete(); // Triggers boot static::deleting() to clean attachments
+            }
+        } catch (\Throwable $e) {
+            // Ignore DB/runtime error
+        }
+    }
+
     public function contacts(Request $request)
     {
+        $this->pruneExpiredMessages();
+
         $currentUser = $this->getCurrentUser($request);
         $currentType = $this->getCurrentType($request);
 
@@ -65,6 +79,7 @@ class MessageController extends Controller
         })->with('lastMessage')
         ->withCount(['messages as unread_count' => function ($query) use ($currentUser, $currentType) {
             $query->where('is_read', false)
+                  ->where('created_at', '>=', now()->subDays(7))
                   ->where(function ($q) use ($currentUser, $currentType) {
                       $q->where('sender_type', '!=', $currentType)
                         ->orWhere('sender_id', '!=', $currentUser->id);
@@ -150,6 +165,8 @@ class MessageController extends Controller
 
     public function fetchMessages(Request $request, $receiverId)
     {
+        $this->pruneExpiredMessages();
+
         $receiverType = $request->query('receiver_type');
         if (!$receiverType) {
             return response()->json([]);
@@ -185,7 +202,9 @@ class MessageController extends Controller
             broadcast(new \App\Events\MessagesRead($senderId, $senderType, $receiverId, $receiverType))->toOthers();
         }
 
-        $messages = $conversation->messages()->with('context')->get();
+        $messages = $conversation->messages()->with('context')
+            ->where('created_at', '>=', now()->subDays(7))
+            ->get();
         return response()->json($messages);
     }
 
